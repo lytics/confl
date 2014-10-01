@@ -1,4 +1,4 @@
-package toml
+package confl
 
 // tomlType represents any Go type that corresponds to a TOML type.
 // While the first draft of the TOML spec has a simplistic type system that

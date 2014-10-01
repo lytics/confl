@@ -1,4 +1,4 @@
-package toml
+package confl
 
 import (
 	"bytes"

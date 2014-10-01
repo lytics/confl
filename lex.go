@@ -1,4 +1,4 @@
-package toml
+package confl
 
 import (
 	"fmt"
@@ -12,6 +12,7 @@ const (
 	itemError itemType = iota
 	itemNIL            // used in the parser to indicate no type
 	itemEOF
+	itemKey
 	itemText
 	itemString
 	itemBool

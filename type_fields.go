@@ -1,4 +1,4 @@
-package toml
+package confl
 
 // Struct field handling is adapted from code in encoding/json:
 //

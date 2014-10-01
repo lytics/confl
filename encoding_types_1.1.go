@@ -1,6 +1,6 @@
 // +build !go1.2
 
-package toml
+package confl
 
 // These interfaces were introduced in Go 1.2, so we add them manually when
 // compiling for Go 1.1.
