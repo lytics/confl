@@ -1,19 +1,28 @@
 package confl
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"reflect"
 	"testing"
 	"time"
+
+	u "github.com/araddon/gou"
+	"github.com/bmizerany/assert"
 )
 
 func init() {
 	log.SetFlags(0)
+	flag.Parse()
+	if testing.Verbose() {
+		u.SetupLogging("debug")
+	}
+	u.Info("hello")
 }
 
 func TestDecodeSimple(t *testing.T) {
-	var testSimple = `
+	var simpleConfigString = `
 age = 250
 andrew = "gallant"
 kait = "brady"
@@ -25,7 +34,7 @@ colors = [
 	["cyan", "magenta", "yellow", "black"],
 ]
 
-[My.Cats]
+[My]
 plato = "cat 1"
 cauchy = "cat 2"
 `
@@ -34,7 +43,7 @@ cauchy = "cat 2"
 		Plato  string
 		Cauchy string
 	}
-	type simple struct {
+	type simpleType struct {
 		Age     int
 		Colors  [][]string
 		Pi      float64
@@ -45,17 +54,15 @@ cauchy = "cat 2"
 		My      map[string]cats
 	}
 
-	var val simple
-	_, err := Decode(testSimple, &val)
-	if err != nil {
-		t.Fatal(err)
-	}
+	var simple simpleType
+	_, err := Decode(simpleConfigString, &simple)
+	assert.Tf(t, err == nil, "err nil?%v", err)
 
 	now, err := time.Parse("2006-01-02T15:04:05", "1987-07-05T05:45:00")
 	if err != nil {
 		panic(err)
 	}
-	var answer = simple{
+	var answer = simpleType{
 		Age:     250,
 		Andrew:  "gallant",
 		Kait:    "brady",
@@ -70,9 +77,9 @@ cauchy = "cat 2"
 			"Cats": cats{Plato: "cat 1", Cauchy: "cat 2"},
 		},
 	}
-	if !reflect.DeepEqual(val, answer) {
+	if !reflect.DeepEqual(simple, answer) {
 		t.Fatalf("Expected\n-----\n%#v\n-----\nbut got\n-----\n%#v\n",
-			answer, val)
+			answer, simple)
 	}
 }
 
@@ -119,7 +126,7 @@ func TestDecodeEmbedded(t *testing.T) {
 	}
 }
 
-func TestTableArrays(t *testing.T) {
+func TestDecodeTableArrays(t *testing.T) {
 	var tomlTableArrays = `
 [[albums]]
 name = "Born to Run"
@@ -171,7 +178,7 @@ name = "Born in the USA"
 // but implementations change.
 // Probably still missing demonstrations of some ugly corner cases regarding
 // case insensitive matching and multiple fields.
-func TestCase(t *testing.T) {
+func TestDecodeCase(t *testing.T) {
 	var caseToml = `
 tOpString = "string"
 tOpInt = 1
@@ -236,7 +243,7 @@ nEstedString = "another string"
 	}
 }
 
-func TestPointers(t *testing.T) {
+func TestDecodePointers(t *testing.T) {
 	type Object struct {
 		Type        string
 		Description string
