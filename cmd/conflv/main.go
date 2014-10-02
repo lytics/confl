@@ -1,4 +1,3 @@
-// Command tomlv validates TOML documents and prints each key's type.
 package main
 
 import (
@@ -10,7 +9,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/BurntSushi/toml"
+	"github.com/lytics/confl"
 )
 
 var (
@@ -28,7 +27,7 @@ func init() {
 }
 
 func usage() {
-	log.Printf("Usage: %s toml-file [ toml-file ... ]\n",
+	log.Printf("Usage: %s name.conf [ file2 ... ]\n",
 		path.Base(os.Args[0]))
 	flag.PrintDefaults()
 
@@ -41,7 +40,7 @@ func main() {
 	}
 	for _, f := range flag.Args() {
 		var tmp interface{}
-		md, err := toml.DecodeFile(f, &tmp)
+		md, err := confl.DecodeFile(f, &tmp)
 		if err != nil {
 			log.Fatalf("Error in '%s': %s", f, err)
 		}
@@ -51,7 +50,7 @@ func main() {
 	}
 }
 
-func printTypes(md toml.MetaData) {
+func printTypes(md confl.MetaData) {
 	tabw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	for _, key := range md.Keys() {
 		fmt.Fprintf(tabw, "%s%s\t%s\n",

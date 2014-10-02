@@ -12,7 +12,7 @@ import (
 
 var e = fmt.Errorf
 
-// Primitive is a TOML value that hasn't been decoded into a Go value.
+// Primitive is a value that hasn't been decoded into a Go value.
 // When using the various `Decode*` functions, the type `Primitive` may
 // be given to any value, and its decoding will be delayed.
 //
@@ -23,7 +23,7 @@ var e = fmt.Errorf
 //
 // N.B. Primitive values are still parsed, so using them will only avoid
 // the overhead of reflection. They can be useful when you don't know the
-// exact type of TOML data until run time.
+// exact type of data until run time.
 type Primitive struct {
 	undecoded interface{}
 	context   Key
@@ -38,7 +38,7 @@ func PrimitiveDecode(primValue Primitive, v interface{}) error {
 }
 
 // PrimitiveDecode is just like the other `Decode*` functions, except it
-// decodes a TOML value that has already been parsed. Valid primitive values
+// decodes a confl value that has already been parsed. Valid primitive values
 // can *only* be obtained from values filled by the decoder functions,
 // including this method. (i.e., `v` may contain more `Primitive`
 // values.)
@@ -54,38 +54,38 @@ func (md *MetaData) PrimitiveDecode(primValue Primitive, v interface{}) error {
 	return md.unify(primValue.undecoded, rvalue(v))
 }
 
-// Decode will decode the contents of `data` in TOML format into a pointer
+// Decode will decode the contents of `data` in confl format into a pointer
 // `v`.
 //
-// TOML hashes correspond to Go structs or maps. (Dealer's choice. They can be
+// confl hashes correspond to Go structs or maps. (Dealer's choice. They can be
 // used interchangeably.)
 //
-// TOML arrays of tables correspond to either a slice of structs or a slice
+// confl arrays of tables correspond to either a slice of structs or a slice
 // of maps.
 //
-// TOML datetimes correspond to Go `time.Time` values.
+// confl datetimes correspond to Go `time.Time` values.
 //
-// All other TOML types (float, string, int, bool and array) correspond
+// All other confl types (float, string, int, bool and array) correspond
 // to the obvious Go types.
 //
 // An exception to the above rules is if a type implements the
-// encoding.TextUnmarshaler interface. In this case, any primitive TOML value
+// encoding.TextUnmarshaler interface. In this case, any primitive confl value
 // (floats, strings, integers, booleans and datetimes) will be converted to
 // a byte string and given to the value's UnmarshalText method. See the
 // Unmarshaler example for a demonstration with time duration strings.
 //
 // Key mapping
 //
-// TOML keys can map to either keys in a Go map or field names in a Go
-// struct. The special `toml` struct tag may be used to map TOML keys to
+// confl keys can map to either keys in a Go map or field names in a Go
+// struct. The special `confl` struct tag may be used to map confl keys to
 // struct fields that don't match the key name exactly. (See the example.)
 // A case insensitive match to struct names will be tried if an exact match
 // can't be found.
 //
-// The mapping between TOML values and Go values is loose. That is, there
-// may exist TOML values that cannot be placed into your representation, and
+// The mapping between confl values and Go values is loose. That is, there
+// may exist confl values that cannot be placed into your representation, and
 // there may be parts of your representation that do not correspond to
-// TOML values. This loose mapping can be made stricter by using the IsDefined
+// confl values. This loose mapping can be made stricter by using the IsDefined
 // and/or Undecoded methods on the MetaData returned.
 //
 // This decoder will not handle cyclic types. If a cyclic type is passed,
@@ -155,9 +155,9 @@ func (md *MetaData) unify(data interface{}, rv reflect.Value) error {
 	}
 	// BUG(burntsushi)
 	// The behavior here is incorrect whenever a Go type satisfies the
-	// encoding.TextUnmarshaler interface but also corresponds to a TOML
+	// encoding.TextUnmarshaler interface but also corresponds to a conf
 	// hash or array. In particular, the unmarshaler should only be applied
-	// to primitive TOML values. But at this point, it will be applied to
+	// to primitive conf values. But at this point, it will be applied to
 	// all kinds of values and produce an incorrect error whenever those values
 	// are hashes or arrays (including arrays of tables).
 
@@ -276,7 +276,7 @@ func (md *MetaData) unifyArray(data interface{}, rv reflect.Value) error {
 	}
 	sliceLen := datav.Len()
 	if sliceLen != rv.Len() {
-		return e("expected array length %d; got TOML array of length %d",
+		return e("expected array length %d; got array of length %d",
 			rv.Len(), sliceLen)
 	}
 	return md.unifySliceArray(datav, rv)

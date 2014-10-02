@@ -17,8 +17,8 @@ func init() {
 	flag.Parse()
 	if testing.Verbose() {
 		u.SetupLogging("debug")
+		u.SetColorOutput()
 	}
-	u.Info("hello")
 }
 
 func TestDecodeSimple(t *testing.T) {
@@ -34,9 +34,13 @@ colors = [
 	["cyan", "magenta", "yellow", "black"],
 ]
 
-[My]
-plato = "cat 1"
-cauchy = "cat 2"
+my {
+  Cats {
+    plato = "cat 1"
+    cauchy = "cat 2"
+  }
+}
+
 `
 
 	type cats struct {
@@ -127,25 +131,23 @@ func TestDecodeEmbedded(t *testing.T) {
 }
 
 func TestDecodeTableArrays(t *testing.T) {
-	var tomlTableArrays = `
-[[albums]]
-name = "Born to Run"
-
-  [[albums.songs]]
-  name = "Jungleland"
-
-  [[albums.songs]]
-  name = "Meeting Across the River"
-
-[[albums]]
-name = "Born in the USA"
-  
-  [[albums.songs]]
-  name = "Glory Days"
-
-  [[albums.songs]]
-  name = "Dancing in the Dark"
-`
+	var tableArrays = `
+albums [
+	{
+		name = "Born to Run"
+	    songs [
+	      { name = "Jungleland" },
+	      { name = "Meeting Across the River" }
+	    ]
+    }
+    {
+    	name = "Born in the USA"
+  	    songs [
+	      { name = "Glory Days" },
+	      { name = "Dancing in the Dark" }
+	    ]
+    }
+]`
 
 	type Song struct {
 		Name string
@@ -165,7 +167,7 @@ name = "Born in the USA"
 		{"Born in the USA", []Song{{"Glory Days"}, {"Dancing in the Dark"}}},
 	}}
 	var got Music
-	if _, err := Decode(tomlTableArrays, &got); err != nil {
+	if _, err := Decode(tableArrays, &got); err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(expected, got) {
@@ -179,7 +181,7 @@ name = "Born in the USA"
 // Probably still missing demonstrations of some ugly corner cases regarding
 // case insensitive matching and multiple fields.
 func TestDecodeCase(t *testing.T) {
-	var caseToml = `
+	var caseData = `
 tOpString = "string"
 tOpInt = 1
 tOpFloat = 1.1
@@ -189,8 +191,11 @@ tOparray = [ "array" ]
 Match = "i should be in Match only"
 MatcH = "i should be in MatcH only"
 once = "just once"
-[nEst.eD]
-nEstedString = "another string"
+nEst {
+	eD {
+		nEstedString = "another string"
+	}
+}
 `
 
 	type InsensitiveEd struct {
@@ -235,7 +240,7 @@ nEstedString = "another string"
 		},
 	}
 	var got Insensitive
-	if _, err := Decode(caseToml, &got); err != nil {
+	if _, err := Decode(caseData, &got); err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(expected, got) {
@@ -270,17 +275,22 @@ func TestDecodePointers(t *testing.T) {
 Strptr = "blah"
 Strptrs = ["abc", "def"]
 
-[NamedObject.foo]
-Type = "FOO"
-Description = "fooooo!!!"
+NamedObject {
+	foo {
+      Type = "FOO"
+      Description = "fooooo!!!"
+	}
 
-[NamedObject.bar]
-Type = "BAR"
-Description = "ba-ba-ba-ba-barrrr!!!"
+    bar {
+		Type = "BAR"
+		Description = "ba-ba-ba-ba-barrrr!!!"
+    }
+}
 
-[BaseObject]
-Type = "BASE"
-Description = "da base"
+BaseObject {
+    Type = "BASE"
+    Description = "da base"
+}
 `
 	dict := new(Dict)
 	_, err := Decode(ex1, dict)
@@ -335,7 +345,7 @@ func TestDecodeSizedInts(t *testing.T) {
 		I   int
 	}
 	answer := table{1, 1, 1, 1, 1, -1, -1, -1, -1, -1}
-	toml := `
+	configStr := `
 	u8 = 1
 	u16 = 1
 	u32 = 1
@@ -348,7 +358,7 @@ func TestDecodeSizedInts(t *testing.T) {
 	i = -1
 	`
 	var tab table
-	if _, err := Decode(toml, &tab); err != nil {
+	if _, err := Decode(configStr, &tab); err != nil {
 		t.Fatal(err.Error())
 	}
 	if answer != tab {
@@ -360,16 +370,21 @@ func ExampleMetaData_PrimitiveDecode() {
 	var md MetaData
 	var err error
 
-	var tomlBlob = `
-ranking = ["Springsteen", "J Geils"]
+	var rawData = `
 
-[bands.Springsteen]
-started = 1973
-albums = ["Greetings", "WIESS", "Born to Run", "Darkness"]
+ranking = ["Springsteen", "JGeils"]
 
-[bands.J Geils]
-started = 1970
-albums = ["The J. Geils Band", "Full House", "Blow Your Face Out"]
+bands {
+	Springsteen { 
+		started = 1973
+		albums = ["Greetings", "WIESS", "Born to Run", "Darkness"]
+	}
+
+	JGeils {
+		started = 1970
+		albums = ["The J. Geils Band", "Full House", "Blow Your Face Out"]
+	}
+}
 `
 
 	type band struct {
@@ -383,7 +398,7 @@ albums = ["The J. Geils Band", "Full House", "Blow Your Face Out"]
 
 	// Do the initial decode. Reflection is delayed on Primitive values.
 	var music classics
-	if md, err = Decode(tomlBlob, &music); err != nil {
+	if md, err = Decode(rawData, &music); err != nil {
 		log.Fatal(err)
 	}
 
@@ -399,7 +414,8 @@ albums = ["The J. Geils Band", "Full House", "Blow Your Face Out"]
 
 		var aBand band
 		if err = md.PrimitiveDecode(primValue, &aBand); err != nil {
-			log.Fatal(err)
+			u.Warnf("failed on: ")
+			log.Fatalf("Failed on %v  %v", primValue, err)
 		}
 		fmt.Printf("%s started in %d.\n", artist, aBand.Started)
 	}
@@ -410,28 +426,34 @@ albums = ["The J. Geils Band", "Full House", "Blow Your Face Out"]
 	// Output:
 	// Is `bands.Springsteen` defined? true
 	// Springsteen started in 1973.
-	// J Geils started in 1970.
+	// JGeils started in 1970.
 	// Undecoded: []
 }
 
 func ExampleDecode() {
-	var tomlBlob = `
+	var rawData = `
 # Some comments.
-[alpha]
-ip = "10.0.0.1"
+alpha {
+	ip = "10.0.0.1"
 
-	[alpha.config]
-	Ports = [ 8001, 8002 ]
-	Location = "Toronto"
-	Created = 1987-07-05T05:45:00Z
+	config {
+		Ports = [ 8001, 8002 ]
+		Location = "Toronto"
+		Created = 1987-07-05T05:45:00Z
+	}
+}
 
-[beta]
-ip = "10.0.0.2"
 
-	[beta.config]
-	Ports = [ 9001, 9002 ]
-	Location = "New Jersey"
-	Created = 1887-01-05T05:55:00Z
+beta {
+	ip = "10.0.0.2"
+
+	config {
+		Ports = [ 9001, 9002 ]
+		Location = "New Jersey"
+		Created = 1887-01-05T05:55:00Z
+	}
+}
+
 `
 
 	type serverConfig struct {
@@ -441,14 +463,14 @@ ip = "10.0.0.2"
 	}
 
 	type server struct {
-		IP     string       `toml:"ip"`
-		Config serverConfig `toml:"config"`
+		IP     string       `confl:"ip"`
+		Config serverConfig `confl:"config"`
 	}
 
 	type servers map[string]server
 
 	var config servers
-	if _, err := Decode(tomlBlob, &config); err != nil {
+	if _, err := Decode(rawData, &config); err != nil {
 		log.Fatal(err)
 	}
 
@@ -477,17 +499,21 @@ func (d *duration) UnmarshalText(text []byte) error {
 	return err
 }
 
-// Example Unmarshaler shows how to decode TOML strings into your own
+// Example Unmarshaler shows how to decode strings into your own
 // custom data type.
 func Example_unmarshaler() {
-	blob := `
-[[song]]
-name = "Thunder Road"
-duration = "4m49s"
+	rawData := `
+song [
+	{
+		name = "Thunder Road"
+		duration = "4m49s"
+	},
+	{
+		name = "Stairway to Heaven"
+		duration = "8m03s"
+	}
+]
 
-[[song]]
-name = "Stairway to Heaven"
-duration = "8m03s"
 `
 	type song struct {
 		Name     string
@@ -497,7 +523,7 @@ duration = "8m03s"
 		Song []song
 	}
 	var favorites songs
-	if _, err := Decode(blob, &favorites); err != nil {
+	if _, err := Decode(rawData, &favorites); err != nil {
 		log.Fatal(err)
 	}
 
@@ -522,26 +548,26 @@ duration = "8m03s"
 }
 
 // Example StrictDecoding shows how to detect whether there are keys in the
-// TOML document that weren't decoded into the value given. This is useful
+// config document that weren't decoded into the value given. This is useful
 // for returning an error to the user if they've included extraneous fields
 // in their configuration.
-func Example_strictDecoding() {
-	var blob = `
-key1 = "value1"
-key2 = "value2"
-key3 = "value3"
-`
-	type config struct {
-		Key1 string
-		Key3 string
-	}
+// func Example_strictDecoding() {
+// 	var rawData = `
+// key1 = "value1"
+// key2 = "value2"
+// key3 = "value3"
+// `
+// 	type config struct {
+// 		Key1 string
+// 		Key3 string
+// 	}
 
-	var conf config
-	md, err := Decode(blob, &conf)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Undecoded keys: %q\n", md.Undecoded())
-	// Output:
-	// Undecoded keys: ["key2"]
-}
+// 	var conf config
+// 	md, err := Decode(rawData, &conf)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	fmt.Printf("Undecoded keys: %q\n", md.Undecoded())
+// 	// Output:
+// 	// Undecoded keys: ["key2"]
+// }

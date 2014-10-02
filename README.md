@@ -1,49 +1,18 @@
-## TOML parser and encoder for Go with reflection
+## Yet another Config Parser for go
 
-TOML stands for Tom's Obvious, Minimal Language. This Go package provides a
-reflection interface similar to Go's standard library `json` and `xml` 
-packages. This package also supports the `encoding.TextUnmarshaler` and
-`encoding.TextMarshaler` interfaces so that you can define custom data 
-representations. (There is an example of this below.)
+This is a config parser most similar to Nginx
 
-Spec: https://github.com/mojombo/toml
-
-Compatible with TOML version
-[v0.2.0](https://github.com/mojombo/toml/blob/master/versions/toml-v0.2.0.md)
-
-Documentation: http://godoc.org/github.com/BurntSushi/toml
-
-Installation:
-
-```bash
-go get github.com/BurntSushi/toml
-```
-
-Try the toml validator:
-
-```bash
-go get github.com/BurntSushi/toml/cmd/tomlv
-tomlv some-toml-file.toml
-```
-
-[![Build status](https://api.travis-ci.org/BurntSushi/toml.png)](https://travis-ci.org/BurntSushi/toml)
-
-
-### Testing
-
-This package passes all tests in
-[toml-test](https://github.com/BurntSushi/toml-test) for both the decoder
-and the encoder.
+[![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](https://godoc.org/github.com/lytics/confl)
 
 ### Examples
 
 This package works similarly to how the Go standard library handles `XML`
 and `JSON`. Namely, data is loaded into Go values via reflection.
 
-For the simplest example, consider some TOML file as just a list of keys
+For the simplest example, consider a file as just a list of keys
 and values:
 
-```toml
+```
 Age = 25
 Cats = [ "Cauchy", "Plato" ]
 Pi = 3.14
@@ -59,7 +28,7 @@ type Config struct {
   Cats []string
   Pi float64
   Perfection []int
-  DOB time.Time // requires `import time`
+  DOB time.Time 
 }
 ```
 
@@ -67,21 +36,21 @@ And then decoded with:
 
 ```go
 var conf Config
-if _, err := toml.Decode(tomlData, &conf); err != nil {
+if _, err := confl.Decode(data, &conf); err != nil {
   // handle error
 }
 ```
 
-You can also use struct tags if your struct field name doesn't map to a TOML
+You can also use struct tags if your struct field name doesn't map to a confl
 key value directly:
 
-```toml
+```
 some_key_NAME = "wat"
 ```
 
 ```go
-type TOML struct {
-  ObscureKey string `toml:"some_key_NAME"`
+type Config struct {
+  ObscureKey string `confl:"some_key_NAME"`
 }
 ```
 
@@ -90,14 +59,17 @@ type TOML struct {
 Here's an example that automatically parses duration strings into 
 `time.Duration` values:
 
-```toml
-[[song]]
-name = "Thunder Road"
-duration = "4m49s"
-
-[[song]]
-name = "Stairway to Heaven"
-duration = "8m03s"
+```
+song [
+	{
+		name = "Thunder Road"
+		duration = "4m49s"
+	},
+	{
+		name = "Stairway to Heaven"
+		duration = "8m03s"
+	}
+]
 ```
 
 Which can be decoded with:
@@ -139,58 +111,66 @@ func (d *duration) UnmarshalText(text []byte) error {
 
 Here's an example of how to load the example from the official spec page:
 
-```toml
-# This is a TOML document. Boom.
+```
+# nice, config with comments
 
-title = "TOML Example"
+title = "conf Example"
 
-[owner]
-name = "Tom Preston-Werner"
-organization = "GitHub"
-bio = "GitHub Cofounder & CEO\nLikes tater tots and beer."
-dob = 1979-05-27T07:32:00Z # First class dates? Why not?
+hand {
+  name = "Tyrion"
+  organization = "Lannisters"
+  bio = "Imp"                 // comments on fields
+  dob = 1979-05-27T07:32:00Z  # dates, and more comments on fields
+}
 
-[database]
-server = "192.168.1.1"
-ports = [ 8001, 8001, 8002 ]
-connection_max = 5000
-enabled = true
+// Now, some name/value that is quoted and more json esque
+address {
+  "street": "1 Sky Cell",
+  "city": "Eyre",
+  "region": "Vale of Arryn",
+  "country": "Westeros"
+}
 
-[servers]
+servers {
+  # You can indent as you please. Tabs or spaces. 
+  alpha {
+    ip = "10.0.0.1"
+    dc = "eqdc10"
+  }
 
-  # You can indent as you please. Tabs or spaces. TOML don't care.
-  [servers.alpha]
-  ip = "10.0.0.1"
-  dc = "eqdc10"
+  beta {
+    ip = "10.0.0.2"
+    dc = "eqdc10"
+  }
 
-  [servers.beta]
-  ip = "10.0.0.2"
-  dc = "eqdc10"
+}
 
-[clients]
-data = [ ["gamma", "delta"], [1, 2] ] # just an update to make sure parsers support it
+clients {
+	data = [ ["gamma", "delta"], [1, 2] ] # just an update to make sure parsers support it
 
-# Line breaks are OK when inside arrays
-hosts = [
-  "alpha",
-  "omega"
-]
+	# Line breaks are OK when inside arrays
+	hosts = [
+	  "alpha",
+	  "omega"
+	]
+}
+
 ```
 
 And the corresponding Go types are:
 
 ```go
-type tomlConfig struct {
+type Config struct {
 	Title string
 	Owner ownerInfo
-	DB database `toml:"database"`
+	DB database `confl:"database"`
 	Servers map[string]server
 	Clients clients
 }
 
 type ownerInfo struct {
 	Name string
-	Org string `toml:"organization"`
+	Org string `confl:"organization"`
 	Bio string
 	DOB time.Time
 }
@@ -198,7 +178,7 @@ type ownerInfo struct {
 type database struct {
 	Server string
 	Ports []int
-	ConnMax int `toml:"connection_max"`
+	ConnMax int `confl:"connection_max"`
 	Enabled bool
 }
 
@@ -216,5 +196,5 @@ type clients struct {
 Note that a case insensitive match will be tried if an exact match can't be
 found.
 
-A working example of the above can be found in `_examples/example.{go,toml}`.
+A working example of the above can be found in `_examples/example.{go,conf}`.
 

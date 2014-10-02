@@ -17,8 +17,11 @@ package confl
 
 import (
 	"fmt"
+	u "github.com/araddon/gou"
 	"unicode/utf8"
 )
+
+var _ = u.EMPTY
 
 type itemType int
 
@@ -35,10 +38,6 @@ const (
 	itemDatetime
 	itemArrayStart
 	itemArrayEnd
-	itemTableStart
-	itemTableEnd
-	itemArrayTableStart
-	itemArrayTableEnd
 	itemMapStart
 	itemMapEnd
 	itemCommentStart
@@ -50,8 +49,6 @@ const (
 	mapEnd            = '}'
 	keySepEqual       = '='
 	keySepColon       = ':'
-	tableStart        = '['
-	tableEnd          = ']'
 	arrayStart        = '['
 	arrayEnd          = ']'
 	arrayValTerm      = ','
@@ -70,13 +67,14 @@ const (
 type stateFn func(lx *lexer) stateFn
 
 type lexer struct {
-	input string
-	start int
-	pos   int
-	width int
-	line  int
-	state stateFn
-	items chan item
+	input          string
+	start          int
+	pos            int
+	width          int
+	line           int
+	state          stateFn
+	items          chan item
+	circuitBreaker int
 
 	// A stack of state functions used to maintain context.
 	// The idea is to reuse parts of the state machine in various places.
@@ -134,10 +132,22 @@ func (lx *lexer) emit(typ itemType) {
 }
 
 func (lx *lexer) next() (r rune) {
+
+	// stackBuf := make([]byte, 4096)
+	// stackBufLen := runtime.Stack(stackBuf, false)
+	// stackTraceStr := string(stackBuf[0:stackBufLen])
+
 	if lx.pos >= len(lx.input) {
+		//u.Warnf("next() pos=%d len=%d  %v", lx.pos, len(lx.input), string(stackTraceStr))
 		lx.width = 0
+		// if lx.circuitBreaker > 0 {
+		// 	panic("hm")
+		// }
+		// lx.circuitBreaker++
 		return eof
 	}
+
+	//u.Debugf("next() pos=%d len=%d  %v", lx.pos, len(lx.input), string(stackTraceStr))
 
 	if lx.input[lx.pos] == '\n' {
 		lx.line++
@@ -193,10 +203,10 @@ func (lx *lexer) errorf(format string, values ...interface{}) stateFn {
 	return nil
 }
 
-// lexTop consumes elements at the top level of TOML data.
+// lexTop consumes elements at the top level of data.
 func lexTop(lx *lexer) stateFn {
 	r := lx.next()
-	if isWhitespace(r) || isNL(r) {
+	if r != eof && (isWhitespace(r) || isNL(r)) {
 		return lexSkip(lx, lexTop)
 	}
 
@@ -227,36 +237,6 @@ func lexTop(lx *lexer) stateFn {
 	return lexKeyStart
 }
 
-// lexTopEnd is entered whenever a top-level item has been consumed. (A value
-// or a table.) It must see only whitespace, and will turn back to lexTop
-// upon a new line. If it sees EOF, it will quit the lexer successfully.
-func lexTopEnd(lx *lexer) stateFn {
-	r := lx.next()
-	switch {
-	case r == commentHashStart:
-		lx.push(lexTop)
-		return lexCommentStart
-	case r == commentSlashStart:
-		rn := lx.next()
-		if rn == commentSlashStart {
-			lx.push(lexTop)
-			return lexCommentStart
-		}
-		lx.backup()
-		fallthrough
-	case isWhitespace(r):
-		return lexTopEnd
-	case isNL(r):
-		lx.ignore()
-		return lexTop
-	case r == eof:
-		lx.ignore()
-		return lexTop
-	}
-	return lx.errorf("Expected a top-level item to end with a new line, "+
-		"comment or EOF, but got %q instead.", r)
-}
-
 // lexTopValueEnd is entered whenever a top-level value has been consumed.
 // It must see only whitespace, and will turn back to lexTop upon a new line.
 // If it sees EOF, it will quit the lexer successfully.
@@ -275,8 +255,6 @@ func lexTopValueEnd(lx *lexer) stateFn {
 		}
 		lx.backup()
 		fallthrough
-	case r == tableStart:
-		return lexTableStart
 	case isWhitespace(r):
 		return lexTopValueEnd
 	case isNL(r) || r == eof || r == optValTerm:
@@ -285,72 +263,6 @@ func lexTopValueEnd(lx *lexer) stateFn {
 	}
 	return lx.errorf("Expected a top-level value to end with a new line, "+
 		"comment or EOF, but got '%v' instead.", r)
-}
-
-// lexTable lexes the beginning of a table. Namely, it makes sure that
-// it starts with a character other than '.' and ']'.
-// It assumes that '[' has already been consumed.
-// It also handles the case that this is an item in an array of tables.
-// e.g., '[[name]]'.
-func lexTableStart(lx *lexer) stateFn {
-	if lx.peek() == tableStart {
-		lx.next()
-		lx.emit(itemArrayTableStart)
-		lx.push(lexArrayTableEnd)
-	} else {
-		lx.emit(itemTableStart)
-		lx.push(lexTableEnd)
-	}
-	return lexTableNameStart
-}
-
-func lexTableEnd(lx *lexer) stateFn {
-	lx.emit(itemTableEnd)
-	return lexTopEnd
-}
-
-func lexArrayTableEnd(lx *lexer) stateFn {
-	if r := lx.next(); r != arrayEnd {
-		return lx.errorf("Expected end of table array name delimiter %q, "+
-			"but got %q instead.", arrayEnd, r)
-	}
-	lx.emit(itemArrayTableEnd)
-	return lexTopEnd
-}
-
-func lexTableNameStart(lx *lexer) stateFn {
-	switch lx.next() {
-	case tableEnd, eof:
-		return lx.errorf("Unexpected end of table. (Tables cannot " +
-			"be empty.)")
-	case tableSep:
-		return lx.errorf("Unexpected table separator. (Tables cannot " +
-			"be empty.)")
-	}
-	return lexTableName
-}
-
-// lexTableName lexes the name of a table. It assumes that at least one
-// valid character for the table has already been read.
-func lexTableName(lx *lexer) stateFn {
-	switch lx.peek() {
-	case eof:
-		return lx.errorf("Unexpected end of table name %q.", lx.current())
-	case tableStart:
-		return lx.errorf("Table names cannot contain %q or %q.",
-			tableStart, tableEnd)
-	case tableEnd:
-		lx.emit(itemText)
-		lx.next()
-		return lx.pop()
-	case tableSep:
-		lx.emit(itemText)
-		lx.next()
-		lx.ignore()
-		return lexTableNameStart
-	}
-	lx.next()
-	return lexTableName
 }
 
 // lexKeyStart consumes a key name up until the first non-whitespace character.
@@ -541,6 +453,8 @@ func lexArrayEnd(lx *lexer) stateFn {
 func lexMapKeyStart(lx *lexer) stateFn {
 	r := lx.peek()
 	switch {
+	case r == eof:
+		return lx.errorf("Un terminated map")
 	case isKeySeparator(r):
 		return lx.errorf("Unexpected key separator '%v'.", r)
 	case isWhitespace(r) || isNL(r):

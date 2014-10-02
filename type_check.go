@@ -1,77 +1,74 @@
 package confl
 
-// tomlType represents any Go type that corresponds to a TOML type.
-// While the first draft of the TOML spec has a simplistic type system that
-// probably doesn't need this level of sophistication, we seem to be militating
-// toward adding real composite types.
-type tomlType interface {
+// represents any Go type that corresponds to a internal type.
+type confType interface {
 	typeString() string
 }
 
 // typeEqual accepts any two types and returns true if they are equal.
-func typeEqual(t1, t2 tomlType) bool {
+func typeEqual(t1, t2 confType) bool {
 	if t1 == nil || t2 == nil {
 		return false
 	}
 	return t1.typeString() == t2.typeString()
 }
 
-func typeIsHash(t tomlType) bool {
-	return typeEqual(t, tomlHash) || typeEqual(t, tomlArrayHash)
+func typeIsHash(t confType) bool {
+	return typeEqual(t, confHash) || typeEqual(t, confArrayHash)
 }
 
-type tomlBaseType string
+type confBaseType string
 
-func (btype tomlBaseType) typeString() string {
+func (btype confBaseType) typeString() string {
 	return string(btype)
 }
 
-func (btype tomlBaseType) String() string {
+func (btype confBaseType) String() string {
 	return btype.typeString()
 }
 
 var (
-	tomlInteger   tomlBaseType = "Integer"
-	tomlFloat     tomlBaseType = "Float"
-	tomlDatetime  tomlBaseType = "Datetime"
-	tomlString    tomlBaseType = "String"
-	tomlBool      tomlBaseType = "Bool"
-	tomlArray     tomlBaseType = "Array"
-	tomlHash      tomlBaseType = "Hash"
-	tomlArrayHash tomlBaseType = "ArrayHash"
+	confInteger   confBaseType = "Integer"
+	confFloat     confBaseType = "Float"
+	confDatetime  confBaseType = "Datetime"
+	confString    confBaseType = "String"
+	confBool      confBaseType = "Bool"
+	confArray     confBaseType = "Array"
+	confHash      confBaseType = "Hash"
+	confArrayHash confBaseType = "ArrayHash"
 )
 
-// typeOfPrimitive returns a tomlType of any primitive value in TOML.
+// typeOfPrimitive returns a confType of any primitive value in conf.
 // Primitive values are: Integer, Float, Datetime, String and Bool.
 //
 // Passing a lexer item other than the following will cause a BUG message
 // to occur: itemString, itemBool, itemInteger, itemFloat, itemDatetime.
-func (p *parser) typeOfPrimitive(lexItem item) tomlType {
+func (p *parser) typeOfPrimitive(lexItem item) confType {
 	switch lexItem.typ {
 	case itemInteger:
-		return tomlInteger
+		return confInteger
 	case itemFloat:
-		return tomlFloat
+		return confFloat
 	case itemDatetime:
-		return tomlDatetime
+		return confDatetime
 	case itemString:
-		return tomlString
+		return confString
 	case itemBool:
-		return tomlBool
+		return confBool
 	}
 	p.bug("Cannot infer primitive type of lex item '%s'.", lexItem)
 	panic("unreachable")
 }
 
-// typeOfArray returns a tomlType for an array given a list of types of its
+// typeOfArray returns a confType for an array given a list of types of its
 // values.
 //
 // In the current spec, if an array is homogeneous, then its type is always
 // "Array". If the array is not homogeneous, an error is generated.
-func (p *parser) typeOfArray(types []tomlType) tomlType {
+func (p *parser) typeOfArray(types []confType) confType {
 	// Empty arrays are cool.
 	if len(types) == 0 {
-		return tomlArray
+		return confArray
 	}
 
 	theType := types[0]
@@ -81,5 +78,5 @@ func (p *parser) typeOfArray(types []tomlType) tomlType {
 				"must be homogeneous.", theType, t)
 		}
 	}
-	return tomlArray
+	return confArray
 }

@@ -4,20 +4,28 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/BurntSushi/toml"
+	"github.com/lytics/confl"
 )
 
-type tomlConfig struct {
+type Config struct {
 	Title   string
-	Owner   ownerInfo
-	DB      database `toml:"database"`
+	Hand    handOfKing
+	DB      database `confl:"database"`
 	Servers map[string]server
 	Clients clients
 }
 
-type ownerInfo struct {
+/*
+hand {
+  name = "Tyrion"
+  organization = "Lannisters"
+  bio = "Imp"                 // comments on fields
+  dob = 1979-05-27T07:32:00Z  # dates, and more comments on fields
+}
+*/
+type handOfKing struct {
 	Name string
-	Org  string `toml:"organization"`
+	Org  string `confl:"organization"`
 	Bio  string
 	DOB  time.Time
 }
@@ -25,7 +33,7 @@ type ownerInfo struct {
 type database struct {
 	Server  string
 	Ports   []int
-	ConnMax int `toml:"connection_max"`
+	ConnMax int `confl:"connection_max"`
 	Enabled bool
 }
 
@@ -40,15 +48,15 @@ type clients struct {
 }
 
 func main() {
-	var config tomlConfig
-	if _, err := toml.DecodeFile("example.toml", &config); err != nil {
+	var config Config
+	if _, err := confl.DecodeFile("example.conf", &config); err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	fmt.Printf("Title: %s\n", config.Title)
-	fmt.Printf("Owner: %s (%s, %s), Born: %s\n",
-		config.Owner.Name, config.Owner.Org, config.Owner.Bio, config.Owner.DOB)
+	fmt.Printf("Hand: %s (%s, %s), Born: %s\n",
+		config.Hand.Name, config.Hand.Org, config.Hand.Bio, config.Hand.DOB)
 	fmt.Printf("Database: %s %v (Max conn. %d), Enabled? %v\n",
 		config.DB.Server, config.DB.Ports, config.DB.ConnMax, config.DB.Enabled)
 	for serverName, server := range config.Servers {

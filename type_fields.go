@@ -14,14 +14,14 @@ import (
 
 // A field represents a single field found in a struct.
 type field struct {
-	name  string       // the name of the field (`toml` tag included)
-	tag   bool         // whether field has a `toml` tag
+	name  string       // the name of the field (`confl` tag included)
+	tag   bool         // whether field has a `confl` tag
 	index []int        // represents the depth of an anonymous field
 	typ   reflect.Type // the type of the field
 }
 
 // byName sorts field by name, breaking ties with depth,
-// then breaking ties with "name came from toml tag", then
+// then breaking ties with "name came from confl tag", then
 // breaking ties with index sequence.
 type byName []field
 
@@ -61,7 +61,7 @@ func (x byIndex) Less(i, j int) bool {
 	return len(x[i].index) < len(x[j].index)
 }
 
-// typeFields returns a list of fields that TOML should recognize for the given
+// typeFields returns a list of fields that confl should recognize for the given
 // type. The algorithm is breadth-first search over the set of structs to
 // include - the top struct and then any reachable anonymous structs.
 func typeFields(t reflect.Type) []field {
@@ -95,7 +95,7 @@ func typeFields(t reflect.Type) []field {
 				if sf.PkgPath != "" { // unexported
 					continue
 				}
-				name := sf.Tag.Get("toml")
+				name := sf.Tag.Get("confl")
 				if name == "-" {
 					continue
 				}
@@ -139,7 +139,7 @@ func typeFields(t reflect.Type) []field {
 	sort.Sort(byName(fields))
 
 	// Delete all fields that are hidden by the Go rules for embedded fields,
-	// except that fields with TOML tags are promoted.
+	// except that fields with tags are promoted.
 
 	// The fields are sorted in primary order of name, secondary order
 	// of field index length. Loop over names; for each name, delete
@@ -175,7 +175,7 @@ func typeFields(t reflect.Type) []field {
 // dominantField looks through the fields, all of which are known to
 // have the same name, to find the single field that dominates the
 // others using Go's embedding rules, modified by the presence of
-// TOML tags. If there are multiple top-level fields, the boolean
+// tags. If there are multiple top-level fields, the boolean
 // will be false: This condition is an error in Go and we skip all
 // the fields.
 func dominantField(fields []field) (field, bool) {

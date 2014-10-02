@@ -56,12 +56,9 @@ func TestEncodeRoundTrip(t *testing.T) {
 	}
 }
 
-// XXX(burntsushi)
-// I think these tests probably should be removed. They are good, but they
-// ought to be obsolete by toml-test.
 func TestEncode(t *testing.T) {
 	type Embedded struct {
-		Int int `toml:"_int"`
+		Int int `confl:"_int"`
 	}
 	type NonStruct int
 
@@ -206,7 +203,7 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 			input:     struct{ Mixed []interface{} }{[]interface{}{1, 2.5}},
 			wantError: errArrayMixedElementTypes,
 		},
-		"slice with elems of differing Go types, same TOML types": {
+		"slice with elems of differing Go types, same types": {
 			input: struct {
 				MixedInts   []interface{}
 				MixedFloats []interface{}
@@ -306,12 +303,12 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 		"struct with tags": {
 			input: struct {
 				Struct struct {
-					Int int `toml:"_int"`
-				} `toml:"_struct"`
-				Bool bool `toml:"_bool"`
+					Int int `confl:"_int"`
+				} `confl:"_struct"`
+				Bool bool `confl:"_bool"`
 			}{
 				struct {
-					Int int `toml:"_int"`
+					Int int `confl:"_int"`
 				}{1}, true,
 			},
 			wantOutput: "_bool = true\n\n[_struct]\n  _int = 1\n",
@@ -326,19 +323,19 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 		},
 		"nested embedded struct": {
 			input: struct {
-				Struct struct{ Embedded } `toml:"_struct"`
+				Struct struct{ Embedded } `confl:"_struct"`
 			}{struct{ Embedded }{Embedded{1}}},
 			wantOutput: "[_struct]\n  _int = 1\n",
 		},
 		"nested embedded *struct": {
 			input: struct {
-				Struct struct{ *Embedded } `toml:"_struct"`
+				Struct struct{ *Embedded } `confl:"_struct"`
 			}{struct{ *Embedded }{&Embedded{1}}},
 			wantOutput: "[_struct]\n  _int = 1\n",
 		},
 		"array of tables": {
 			input: struct {
-				Structs []*struct{ Int int } `toml:"struct"`
+				Structs []*struct{ Int int } `confl:"struct"`
 			}{
 				[]*struct{ Int int }{{1}, {3}},
 			},
@@ -395,14 +392,14 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 
 func TestEncodeNestedTableArrays(t *testing.T) {
 	type song struct {
-		Name string `toml:"name"`
+		Name string `confl:"name"`
 	}
 	type album struct {
-		Name  string `toml:"name"`
-		Songs []song `toml:"songs"`
+		Name  string `confl:"name"`
+		Songs []song `confl:"songs"`
 	}
 	type springsteen struct {
-		Albums []album `toml:"albums"`
+		Albums []album `confl:"albums"`
 	}
 	value := springsteen{
 		[]album{

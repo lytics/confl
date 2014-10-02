@@ -150,6 +150,18 @@ func TestLexMultilineArrays(t *testing.T) {
 	expect(t, lx, expectedItems)
 }
 
+func TestLexUnterminated(t *testing.T) {
+	lx := lex("foo {\n name = 'bill' \n")
+	lx.nextItem() // foo
+	lx.nextItem() // map start = ""
+	lx.nextItem() // name
+	lx.nextItem() // bill
+	item := lx.nextItem()
+	if item.typ != itemError {
+		t.Errorf("Should be error for un terminated map:  %v", item)
+	}
+}
+
 var mlArrayNoSep = `
 # top level comment
 foo = [
@@ -223,19 +235,20 @@ var tomlHeaders = `
 port= 4242
 `
 
-func TestLexTomlHeaders(t *testing.T) {
-	expectedItems := []item{
-		{itemKey, "foo", 2},
-		{itemMapStart, "", 2},
-		{itemKey, "port", 3},
-		{itemInteger, "4242", 3},
-		{itemMapEnd, "", 4},
-		{itemEOF, "", 4},
-	}
+// NOT CURRENTLY A FEATURE
+// func TestLexTomlHeaders(t *testing.T) {
+// 	expectedItems := []item{
+// 		{itemKey, "foo", 2},
+// 		{itemMapStart, "", 2},
+// 		{itemKey, "port", 3},
+// 		{itemInteger, "4242", 3},
+// 		{itemMapEnd, "", 4},
+// 		{itemEOF, "", 4},
+// 	}
 
-	lx := lex(tomlHeaders)
-	expect(t, lx, expectedItems)
-}
+// 	lx := lex(tomlHeaders)
+// 	expect(t, lx, expectedItems)
+// }
 
 var nestedMap = `
 foo = {

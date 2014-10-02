@@ -2,21 +2,21 @@ package confl
 
 import "strings"
 
-// MetaData allows access to meta information about TOML data that may not
+// MetaData allows access to meta information about data that may not
 // be inferrable via reflection. In particular, whether a key has been defined
-// and the TOML type of a key.
+// and the type of a key.
 type MetaData struct {
 	mapping map[string]interface{}
-	types   map[string]tomlType
+	types   map[string]confType
 	keys    []Key
 	decoded map[string]bool
 	context Key // Used only during decoding.
 }
 
-// IsDefined returns true if the key given exists in the TOML data. The key
+// IsDefined returns true if the key given exists in the data. The key
 // should be specified hierarchially. e.g.,
 //
-//	// access the TOML key 'a.b.c'
+//	// access the key 'a.b.c'
 //	IsDefined("a", "b", "c")
 //
 // IsDefined will return false if an empty key given. Keys are case sensitive.
@@ -51,7 +51,7 @@ func (md *MetaData) Type(key ...string) string {
 	return ""
 }
 
-// Key is the type of any TOML key, including key groups. Use (MetaData).Keys
+// Key is the type of any key, including key groups. Use (MetaData).Keys
 // to get values of this type.
 type Key []string
 
@@ -66,11 +66,11 @@ func (k Key) add(piece string) Key {
 	return newKey
 }
 
-// Keys returns a slice of every key in the TOML data, including key groups.
+// Keys returns a slice of every key in the data, including key groups.
 // Each key is itself a slice, where the first element is the top of the
 // hierarchy and the last is the most specific.
 //
-// The list will have the same order as the keys appeared in the TOML data.
+// The list will have the same order as the keys appeared in the data.
 //
 // All keys returned are non-empty.
 func (md *MetaData) Keys() []Key {
@@ -78,7 +78,7 @@ func (md *MetaData) Keys() []Key {
 }
 
 // Undecoded returns all keys that have not been decoded in the order in which
-// they appear in the original TOML document.
+// they appear in the original document.
 //
 // This includes keys that haven't been decoded because of a Primitive value.
 // Once the Primitive value is decoded, the keys will be considered decoded.
@@ -86,7 +86,7 @@ func (md *MetaData) Keys() []Key {
 // Also note that decoding into an empty interface will result in no decoding,
 // and so no keys will be considered decoded.
 //
-// In this sense, the Undecoded keys correspond to keys in the TOML document
+// In this sense, the Undecoded keys correspond to keys in the document
 // that do not have a concrete type in your representation.
 func (md *MetaData) Undecoded() []Key {
 	undecoded := make([]Key, 0, len(md.keys))

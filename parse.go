@@ -28,10 +28,10 @@ import (
 // Arrays and nested Maps are also supported.
 type parser struct {
 	mapping map[string]interface{}
-	types   map[string]tomlType
+	types   map[string]confType
 	lx      *lexer
 
-	// A list of keys in the order that they appear in the TOML data.
+	// A list of keys in the order that they appear in the data.
 	ordered []Key
 
 	// the full key for the current hash in scope
@@ -152,6 +152,7 @@ func (p *parser) popKey() string {
 func (p *parser) processItem(it item) error {
 	switch it.typ {
 	case itemError:
+		//panic("error")
 		return fmt.Errorf("Parse error on line %d: '%s'", it.line, it.val)
 	case itemKey:
 		p.pushKey(it.val)
@@ -234,7 +235,7 @@ func (p *parser) setValue(val interface{}) {
 //
 // Note that if `key` is empty, then the type given will be applied to the
 // current context (which is either a table or an array of tables).
-func (p *parser) setType(key string, typ tomlType) {
+func (p *parser) setType(key string, typ confType) {
 	keyContext := make(Key, 0, len(p.context)+1)
 	for _, k := range p.context {
 		keyContext = append(keyContext, k)
