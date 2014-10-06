@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	Title   string
-	Hand    handOfKing
-	DB      database `confl:"database"`
-	Servers map[string]server
-	Clients clients
+	Title       string
+	Hand        handOfKing
+	Location    address `confl:"address"`
+	Seenwith    map[string]character
+	Seasons     []string
+	Description string
 }
 
 /*
@@ -24,27 +25,23 @@ hand {
 }
 */
 type handOfKing struct {
-	Name string
-	Org  string `confl:"organization"`
-	Bio  string
-	DOB  time.Time
+	Name     string
+	Org      string `confl:"organization"`
+	Bio      string
+	DOB      time.Time
+	Deceased bool
 }
 
-type database struct {
-	Server  string
-	Ports   []int
-	ConnMax int `confl:"connection_max"`
-	Enabled bool
+type address struct {
+	Street  string
+	City    string
+	Region  string
+	ZipCode int
 }
 
-type server struct {
-	IP string
-	DC string
-}
-
-type clients struct {
-	Data  [][]interface{}
-	Hosts []string
+type character struct {
+	Episode string
+	Season  string
 }
 
 func main() {
@@ -55,13 +52,12 @@ func main() {
 	}
 
 	fmt.Printf("Title: %s\n", config.Title)
-	fmt.Printf("Hand: %s (%s, %s), Born: %s\n",
-		config.Hand.Name, config.Hand.Org, config.Hand.Bio, config.Hand.DOB)
-	fmt.Printf("Database: %s %v (Max conn. %d), Enabled? %v\n",
-		config.DB.Server, config.DB.Ports, config.DB.ConnMax, config.DB.Enabled)
-	for serverName, server := range config.Servers {
-		fmt.Printf("Server: %s (%s, %s)\n", serverName, server.IP, server.DC)
+	fmt.Printf("Hand: %s %s, %s. Born: %s, Deceased? %v\n",
+		config.Hand.Name, config.Hand.Org, config.Hand.Bio, config.Hand.DOB, config.Hand.Deceased)
+	fmt.Printf("Location: %#v\n", config.Location)
+	for name, person := range config.Seenwith {
+		fmt.Printf("Seen With: %s (%s, %s)\n", name, person.Episode, person.Season)
 	}
-	fmt.Printf("Client data: %v\n", config.Clients.Data)
-	fmt.Printf("Client hosts: %v\n", config.Clients.Hosts)
+	fmt.Printf("Seasons: %v\n", config.Seasons)
+	fmt.Printf("Description: %v\n", config.Description)
 }

@@ -13,9 +13,12 @@ For the simplest example, consider a file as just a list of keys
 and values:
 
 ```
+// Comments in Config
 Age = 25
+# another comment
 Cats = [ "Cauchy", "Plato" ]
-Pi = 3.14
+# now, using quotes on key
+"Pi" = 3.14
 Perfection = [ 6, 28, 496, 8128 ]
 DOB = 1987-07-05T05:45:00Z
 ```
@@ -124,11 +127,11 @@ hand {
 }
 
 // Now, some name/value that is quoted and more json esque
-address {
-  "street": "1 Sky Cell",
-  "city": "Eyre",
-  "region": "Vale of Arryn",
-  "country": "Westeros"
+address : {
+  "street"  : "1 Sky Cell",
+  "city"    : "Eyre",
+  "region"  : "Vale of Arryn",
+  "country" : "Westeros"
 }
 
 servers {
