@@ -18,6 +18,7 @@ package confl
 import (
 	"fmt"
 	u "github.com/araddon/gou"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -606,7 +607,8 @@ func lexMapEnd(lx *lexer) stateFn {
 // Checks if the unquoted string was actually a boolean
 func (lx *lexer) isBool() bool {
 	str := lx.input[lx.start:lx.pos]
-	return str == "true" || str == "false" || str == "TRUE" || str == "FALSE"
+	str = strings.ToLower(str)
+	return str == "true" || str == "false"
 }
 
 // lexQuotedString consumes the inner contents of a string. It assumes that the

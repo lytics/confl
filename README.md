@@ -2,7 +2,9 @@
 
 This is a config parser most similar to Nginx
 
-[![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](https://godoc.org/github.com/lytics/confl)
+[![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](https://godoc.org/github.com/lytics/confl).    
+
+Use [SubmlimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx)
 
 ### Examples
 

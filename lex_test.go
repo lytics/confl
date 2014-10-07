@@ -80,6 +80,12 @@ func TestLexSimpleKeyBoolValues(t *testing.T) {
 	expect(t, lx, expectedItems)
 	lx = lex("foo=true\r\n")
 	expect(t, lx, expectedItems)
+	lx = lex("foo=True")
+	expect(t, lx, []item{
+		{itemKey, "foo", 1},
+		{itemBool, "True", 1},
+		{itemEOF, "", 1},
+	})
 }
 
 func TestLexComments(t *testing.T) {
