@@ -76,6 +76,7 @@ type lexer struct {
 	state          stateFn
 	items          chan item
 	circuitBreaker int
+	isEnd          func(lx *lexer, r rune) bool
 
 	// A stack of state functions used to maintain context.
 	// The idea is to reuse parts of the state machine in various places.
@@ -109,6 +110,7 @@ func lex(input string) *lexer {
 		line:  1,
 		items: make(chan item, 10),
 		stack: make([]stateFn, 0, 10),
+		isEnd: isEndNormal,
 	}
 	return lx
 }
@@ -347,6 +349,7 @@ func lexValue(lx *lexer) stateFn {
 	// We allow whitespace to precede a value, but NOT new lines.
 	// In array syntax, the array states are responsible for ignoring new lines.
 	r := lx.next()
+	//u.Infof("lexValue r = %v", string(r))
 	if isWhitespace(r) {
 		return lexSkip(lx, lexValue)
 	}
@@ -355,15 +358,16 @@ func lexValue(lx *lexer) stateFn {
 	case r == arrayStart:
 		lx.ignore()
 		lx.emit(itemArrayStart)
+		lx.isEnd = isEndArrayUnQuoted
 		return lexArrayValue
 	case r == mapStart:
 		lx.ignore()
 		lx.emit(itemMapStart)
 		return lexMapKeyStart
-	case r == sqStringStart:
+	case r == sqStringStart: //  single quote:   '
 		lx.ignore() // ignore the " or '
 		return lexQuotedString
-	case r == dqStringStart:
+	case r == dqStringStart: // "
 		lx.ignore() // ignore the " or '
 		return lexDubQuotedString
 	case r == '-':
@@ -379,6 +383,8 @@ func lexValue(lx *lexer) stateFn {
 	case isNL(r):
 		return lx.errorf("Expected value but found new line")
 	}
+	// we didn't consume it, so backup
+	lx.backup()
 	return lexString
 	//return lx.errorf("Expected value but found '%s' instead.", r)
 }
@@ -387,6 +393,7 @@ func lexValue(lx *lexer) stateFn {
 // have already been consumed. All whitespace and new lines are ignored.
 func lexArrayValue(lx *lexer) stateFn {
 	r := lx.next()
+	//u.Infof("lexArrayValue  r = %v", string(r))
 	switch {
 	case isWhitespace(r) || isNL(r):
 		return lexSkip(lx, lexArrayValue)
@@ -401,9 +408,8 @@ func lexArrayValue(lx *lexer) stateFn {
 		}
 		lx.backup()
 		fallthrough
-	case r == arrayValTerm:
-		return lx.errorf("Unexpected array value terminator '%v'.",
-			arrayValTerm)
+	case r == arrayValTerm: //   ,  we should not have found comma yet
+		return lx.errorf("Unexpected array value terminator '%v'.", arrayValTerm)
 	case r == arrayEnd:
 		return lexArrayEnd
 	}
@@ -417,6 +423,7 @@ func lexArrayValue(lx *lexer) stateFn {
 // it ignores whitespace and expects either a ',' or a ']'.
 func lexArrayValueEnd(lx *lexer) stateFn {
 	r := lx.next()
+	//u.Infof("lexArrayValueEnd  r = %v", string(r))
 	switch {
 	case isWhitespace(r):
 		return lexSkip(lx, lexArrayValueEnd)
@@ -445,6 +452,7 @@ func lexArrayValueEnd(lx *lexer) stateFn {
 func lexArrayEnd(lx *lexer) stateFn {
 	lx.ignore()
 	lx.emit(itemArrayEnd)
+	lx.isEnd = isEndNormal
 	return lx.pop()
 }
 
@@ -647,11 +655,12 @@ func lexDubQuotedString(lx *lexer) stateFn {
 // beginning '"' has already been consumed and ignored.
 func lexString(lx *lexer) stateFn {
 	r := lx.next()
+	//u.Infof("lexString  r = %v", string(r))
 	switch {
 	case r == '\\':
 		return lexStringEscape
 	// Termination of non-quoted strings
-	case isNL(r) || r == eof || r == optValTerm || isWhitespace(r):
+	case lx.isEnd(lx, r):
 		lx.backup()
 		if lx.isBool() {
 			lx.emit(itemBool)
@@ -911,6 +920,14 @@ func lexSkip(lx *lexer, nextState stateFn) stateFn {
 		lx.ignore()
 		return nextState
 	}
+}
+
+func isEndNormal(lx *lexer, r rune) bool {
+	return (isNL(r) || r == eof || r == optValTerm || isWhitespace(r))
+}
+
+func isEndArrayUnQuoted(lx *lexer, r rune) bool {
+	return (isNL(r) || r == eof || r == optValTerm || r == arrayEnd || r == arrayValTerm || isWhitespace(r))
 }
 
 // Tests for both key separators

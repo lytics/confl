@@ -32,6 +32,7 @@ pi = 3.14
 colors = [
 	["red", "green", "blue"],
 	["cyan", "magenta", "yellow", "black"],
+	[pink,brown],
 ]
 
 my {
@@ -76,6 +77,7 @@ my {
 		Colors: [][]string{
 			{"red", "green", "blue"},
 			{"cyan", "magenta", "yellow", "black"},
+			{"pink", "brown"},
 		},
 		My: map[string]cats{
 			"Cats": cats{Plato: "cat 1", Cauchy: "cat 2"},
