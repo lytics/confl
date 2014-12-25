@@ -303,12 +303,12 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 		"struct with tags": {
 			input: struct {
 				Struct struct {
-					Int int `confl:"_int"`
+					Int int `json:"_int"`
 				} `confl:"_struct"`
 				Bool bool `confl:"_bool"`
 			}{
 				struct {
-					Int int `confl:"_int"`
+					Int int `json:"_int"`
 				}{1}, true,
 			},
 			wantOutput: "_bool = true\n\n[_struct]\n  _int = 1\n",

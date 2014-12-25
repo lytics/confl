@@ -2,6 +2,7 @@ package confl
 
 import (
 	"fmt"
+	u "github.com/araddon/gou"
 	"io"
 	"io/ioutil"
 	"math"
@@ -10,6 +11,7 @@ import (
 	"time"
 )
 
+var _ = u.EMPTY
 var e = fmt.Errorf
 
 // Primitive is a value that hasn't been decoded into a Go value.

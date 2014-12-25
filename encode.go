@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	u "github.com/araddon/gou"
 	"io"
 	"reflect"
 	"sort"
@@ -15,19 +16,14 @@ import (
 type encodeError struct{ error }
 
 var (
-	errArrayMixedElementTypes = errors.New(
-		"can't encode array with mixed element types")
-	errArrayNilElement = errors.New(
-		"can't encode array with nil element")
-	errNonString = errors.New(
-		"can't encode a map with non-string key type")
-	errAnonNonStruct = errors.New(
-		"can't encode an anonymous field that is not a struct")
-	errArrayNoTable = errors.New(
-		"array element can't contain a table")
-	errNoKey = errors.New(
-		"top-level values must be a Go map or struct")
-	errAnything = errors.New("") // used in testing
+	errArrayMixedElementTypes = errors.New("can't encode array with mixed element types")
+	errArrayNilElement        = errors.New("can't encode array with nil element")
+	errNonString              = errors.New("can't encode a map with non-string key type")
+	errAnonNonStruct          = errors.New("can't encode an anonymous field that is not a struct")
+	errArrayNoTable           = errors.New("array element can't contain a table")
+	errNoKey                  = errors.New("top-level values must be a Go map or struct")
+	errAnything               = errors.New("") // used in testing
+	_                         = u.EMPTY
 )
 
 var quotedReplacer = strings.NewReplacer(
@@ -338,8 +334,14 @@ func (enc *Encoder) eStruct(key Key, rv reflect.Value) {
 				continue
 			}
 			if keyName == "" {
-				keyName = sft.Name
+				keyName = sft.Tag.Get("json")
+				if keyName == "-" {
+					continue
+				} else if keyName == "" {
+					keyName = sft.Name
+				}
 			}
+			u.Infof("found key: %v  %v", keyName, sf)
 			enc.encode(key.add(keyName), sf)
 		}
 	}

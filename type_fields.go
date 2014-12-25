@@ -99,6 +99,13 @@ func typeFields(t reflect.Type) []field {
 				if name == "-" {
 					continue
 				}
+				if name == "" {
+					name = sf.Tag.Get("json")
+					if name == "-" {
+						continue
+					}
+				}
+
 				index := make([]int, len(f.index)+1)
 				copy(index, f.index)
 				index[len(f.index)] = i
