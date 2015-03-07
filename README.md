@@ -8,6 +8,9 @@ Nginx is more lenient.
 
 Use [SubmlimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx)
 
+Credit to [BurntSushi/Toml](https://github.com/BurntSushi/toml) and [Apcera/Gnatsd](https://github.com/apcera/gnatsd/tree/master/conf) from which 
+this was derived.
+
 ### Example
 
 ```
