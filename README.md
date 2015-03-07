@@ -1,10 +1,116 @@
 ## Yet another Config Parser for go
 
-This is a config parser most similar to Nginx
+This is a config parser most similar to Nginx, supports
+Json format, but with line-breaks, comments, etc.   Also, like
+Nginx is more lenient.
 
 [![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](https://godoc.org/github.com/lytics/confl).    
 
 Use [SubmlimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx)
+
+### Example
+
+```
+# nice, a config with comments!
+
+# support the name = value format
+title = "conf Example"
+
+# note, we do not have to have quotes
+title2 = Without Quotes
+
+# for Sections we can use brackets
+hand {
+  name = "Tyrion"
+  organization = "Lannisters"
+  bio = "Imp"                 // comments on fields
+  dob = 1979-05-27T07:32:00Z  # dates, and more comments on fields
+}
+
+// Note, double-slash comment
+// section name/value that is quoted and json valid, including commas
+address : {
+  "street"  : "1 Sky Cell",
+  "city"    : "Eyre",
+  "region"  : "Vale of Arryn",
+  "country" : "Westeros"
+}
+
+seenwith {
+  # You can indent as you please. Tabs or spaces
+  jaime {
+    season = season1
+    episode = "episode1"
+  }
+
+  cersei {
+    season = season1
+    episode = "episode1"
+  }
+
+}
+
+
+# Line breaks are OK when inside arrays
+seasons = [
+  "season1",
+  "season2",
+  "season3",
+  "season4",
+  "???"
+]
+
+
+description (
+    we possibly
+    can have
+    multi line text with a block paren
+    block ends with end paren on new line
+)
+
+
+
+```
+
+And the corresponding Go types are:
+
+```go
+type Config struct {
+	Title       string
+	Hand        HandOfKing
+	Location    *Address `confl:"address"`
+	Seenwith    map[string]Character
+	Seasons     []string
+	Description string
+}
+
+type HandOfKing struct {
+	Name     string
+	Org      string `confl:"organization"`
+	Bio      string
+	DOB      time.Time
+	Deceased bool
+}
+
+type Address struct {
+	Street  string
+	City    string
+	Region  string
+	ZipCode int
+}
+
+type Character struct {
+	Episode string
+	Season  string
+}
+```
+
+Note that a case insensitive match will be tried if an exact match can't be
+found.
+
+A working example of the above can be found in `_examples/example.{go,conf}`.
+
+
 
 ### Examples
 
@@ -111,95 +217,4 @@ func (d *duration) UnmarshalText(text []byte) error {
 	return err
 }
 ```
-
-### More complex usage
-
-Here's an example of how to load the example from the official spec page:
-
-```
-# nice, config with comments
-
-title = "conf Example"
-
-hand {
-  name = "Tyrion"
-  organization = "Lannisters"
-  bio = "Imp"                 // comments on fields
-  dob = 1979-05-27T07:32:00Z  # dates, and more comments on fields
-}
-
-// Now, some name/value that is quoted and more json esque
-address : {
-  "street"  : "1 Sky Cell",
-  "city"    : "Eyre",
-  "region"  : "Vale of Arryn",
-  "country" : "Westeros"
-}
-
-servers {
-  # You can indent as you please. Tabs or spaces. 
-  alpha {
-    ip = "10.0.0.1"
-    dc = "eqdc10"
-  }
-
-  beta {
-    ip = "10.0.0.2"
-    dc = "eqdc10"
-  }
-
-}
-
-clients {
-	data = [ ["gamma", "delta"], [1, 2] ] # just an update to make sure parsers support it
-
-	# Line breaks are OK when inside arrays
-	hosts = [
-	  "alpha",
-	  "omega"
-	]
-}
-
-```
-
-And the corresponding Go types are:
-
-```go
-type Config struct {
-	Title string
-	Owner ownerInfo
-	DB database `confl:"database"`
-	Servers map[string]server
-	Clients clients
-}
-
-type ownerInfo struct {
-	Name string
-	Org string `confl:"organization"`
-	Bio string
-	DOB time.Time
-}
-
-type database struct {
-	Server string
-	Ports []int
-	ConnMax int `confl:"connection_max"`
-	Enabled bool
-}
-
-type server struct {
-	IP string
-	DC string
-}
-
-type clients struct {
-	Data [][]interface{}
-	Hosts []string
-}
-```
-
-Note that a case insensitive match will be tried if an exact match can't be
-found.
-
-A working example of the above can be found in `_examples/example.{go,conf}`.
 
