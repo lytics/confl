@@ -24,6 +24,7 @@ func init() {
 func TestDecodeSimple(t *testing.T) {
 	var simpleConfigString = `
 age = 250
+ageptr2 = 200
 andrew = "gallant"
 kait = "brady"
 now = 1987-07-05T05:45:00Z 
@@ -50,6 +51,8 @@ my {
 	}
 	type simpleType struct {
 		Age     int
+		AgePtr  *int
+		AgePtr2 *int
 		Colors  [][]string
 		Pi      float64
 		YesOrNo bool
@@ -67,8 +70,10 @@ my {
 	if err != nil {
 		panic(err)
 	}
+	age200 := int(200)
 	var answer = simpleType{
 		Age:     250,
+		AgePtr2: &age200,
 		Andrew:  "gallant",
 		Kait:    "brady",
 		Now:     now,
@@ -83,6 +88,7 @@ my {
 			"Cats": cats{Plato: "cat 1", Cauchy: "cat 2"},
 		},
 	}
+	assert.Tf(t, simple.AgePtr == nil, "must have nil ptr")
 	if !reflect.DeepEqual(simple, answer) {
 		t.Fatalf("Expected\n-----\n%#v\n-----\nbut got\n-----\n%#v\n",
 			answer, simple)
