@@ -39,8 +39,10 @@ address : {
   "country" : "Westeros"
 }
 
+# sections can omit the colon before bracket or leave in 
 seenwith {
-  # You can indent as you please. Tabs or spaces
+  # nested section
+  # can be spaces or tabs for nesting
   jaime {
     season = season1
     episode = "episode1"
@@ -64,6 +66,7 @@ seasons = [
 ]
 
 
+# long fields can use parens to do multi-line
 description (
     we possibly
     can have
@@ -89,7 +92,7 @@ type Config struct {
 
 type HandOfKing struct {
 	Name     string
-	Org      string `confl:"organization"`
+	Org      string `json:"organization"`  // Reads either confl, or json attributes
 	Bio      string
 	DOB      time.Time
 	Deceased bool
