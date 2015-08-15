@@ -66,6 +66,15 @@ func (k Key) add(piece string) Key {
 	return newKey
 }
 
+func (k Key) insert(piece string) Key {
+	newKey := make(Key, len(k), len(k)+1)
+	copy(newKey, k)
+	insertedKey := make(Key, 1)
+	insertedKey[0] = piece
+	newKey = append(insertedKey, newKey...)
+	return newKey
+}
+
 // Keys returns a slice of every key in the data, including key groups.
 // Each key is itself a slice, where the first element is the top of the
 // hierarchy and the last is the most specific.

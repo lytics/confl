@@ -7,7 +7,12 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	u "github.com/araddon/gou"
+	"github.com/bmizerany/assert"
 )
+
+var _ = u.EMPTY
 
 func TestEncodeRoundTrip(t *testing.T) {
 	type Config struct {
@@ -54,9 +59,14 @@ func TestEncodeRoundTrip(t *testing.T) {
 			"\n\n is not identical to\n\n",
 			secondBuffer.String())
 	}
+
+	// now try with Marshal
+	marshalBytes, err := Marshal(&inputs)
+	assert.T(t, err == nil)
+	assert.Tf(t, bytes.Equal(marshalBytes, firstBuffer.Bytes()), "equal?")
 }
 
-func TestEncode(t *testing.T) {
+func TestEncodeMany(t *testing.T) {
 	type Embedded struct {
 		Int int `confl:"_int"`
 	}
@@ -65,19 +75,20 @@ func TestEncode(t *testing.T) {
 	date := time.Date(2014, 5, 11, 20, 30, 40, 0, time.FixedZone("IST", 3600))
 	dateStr := "2014-05-11T19:30:40Z"
 
-	tests := map[string]struct {
+	tests := []struct {
+		label      string
 		input      interface{}
 		wantOutput string
 		wantError  error
 	}{
-		"bool field": {
+		{label: "bool field",
 			input: struct {
 				BoolTrue  bool
 				BoolFalse bool
 			}{true, false},
 			wantOutput: "BoolTrue = true\nBoolFalse = false\n",
 		},
-		"int fields": {
+		{label: "int fields",
 			input: struct {
 				Int   int
 				Int8  int8
@@ -87,7 +98,7 @@ func TestEncode(t *testing.T) {
 			}{1, 2, 3, 4, 5},
 			wantOutput: "Int = 1\nInt8 = 2\nInt16 = 3\nInt32 = 4\nInt64 = 5\n",
 		},
-		"uint fields": {
+		{label: "uint fields",
 			input: struct {
 				Uint   uint
 				Uint8  uint8
@@ -98,29 +109,29 @@ func TestEncode(t *testing.T) {
 			wantOutput: "Uint = 1\nUint8 = 2\nUint16 = 3\nUint32 = 4" +
 				"\nUint64 = 5\n",
 		},
-		"float fields": {
+		{label: "float fields",
 			input: struct {
 				Float32 float32
 				Float64 float64
 			}{1.5, 2.5},
 			wantOutput: "Float32 = 1.5\nFloat64 = 2.5\n",
 		},
-		"string field": {
+		{label: "string field",
 			input:      struct{ String string }{"foo"},
 			wantOutput: "String = \"foo\"\n",
 		},
-		"string field and unexported field": {
+		{label: "string field and unexported field",
 			input: struct {
 				String     string
 				unexported int
 			}{"foo", 0},
 			wantOutput: "String = \"foo\"\n",
 		},
-		"datetime field in UTC": {
+		{label: "datetime field in UTC",
 			input:      struct{ Date time.Time }{date},
 			wantOutput: fmt.Sprintf("Date = %s\n", dateStr),
 		},
-		"datetime field as primitive": {
+		{label: "datetime field as primitive",
 			// Using a map here to fail if isStructOrMap() returns true for
 			// time.Time.
 			input: map[string]interface{}{
@@ -129,27 +140,27 @@ func TestEncode(t *testing.T) {
 			},
 			wantOutput: fmt.Sprintf("Date = %s\nInt = 1\n", dateStr),
 		},
-		"array fields": {
+		{label: "array fields",
 			input: struct {
 				IntArray0 [0]int
 				IntArray3 [3]int
 			}{[0]int{}, [3]int{1, 2, 3}},
 			wantOutput: "IntArray0 = []\nIntArray3 = [1, 2, 3]\n",
 		},
-		"slice fields": {
+		{label: "slice fields",
 			input: struct{ IntSliceNil, IntSlice0, IntSlice3 []int }{
 				nil, []int{}, []int{1, 2, 3},
 			},
 			wantOutput: "IntSlice0 = []\nIntSlice3 = [1, 2, 3]\n",
 		},
-		"datetime slices": {
+		{label: "datetime slices",
 			input: struct{ DatetimeSlice []time.Time }{
 				[]time.Time{date, date},
 			},
 			wantOutput: fmt.Sprintf("DatetimeSlice = [%s, %s]\n",
 				dateStr, dateStr),
 		},
-		"nested arrays and slices": {
+		{label: "nested arrays and slices",
 			input: struct {
 				SliceOfArrays         [][2]int
 				ArrayOfSlices         [2][]int
@@ -191,19 +202,19 @@ SliceOfMixedArrays = [[1, 2], ["a", "b"]]
 ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 `,
 		},
-		"empty slice": {
+		{label: "empty slice",
 			input:      struct{ Empty []interface{} }{[]interface{}{}},
 			wantOutput: "Empty = []\n",
 		},
-		"(error) slice with element type mismatch (string and integer)": {
+		{label: "(error) slice with element type mismatch (string and integer)",
 			input:     struct{ Mixed []interface{} }{[]interface{}{1, "a"}},
 			wantError: errArrayMixedElementTypes,
 		},
-		"(error) slice with element type mismatch (integer and float)": {
+		{label: "(error) slice with element type mismatch (integer and float)",
 			input:     struct{ Mixed []interface{} }{[]interface{}{1, 2.5}},
 			wantError: errArrayMixedElementTypes,
 		},
-		"slice with elems of differing Go types, same types": {
+		{label: "slice with elems of differing Go types, same types",
 			input: struct {
 				MixedInts   []interface{}
 				MixedFloats []interface{}
@@ -217,90 +228,89 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 			wantOutput: "MixedInts = [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]\n" +
 				"MixedFloats = [1.5, 2.5]\n",
 		},
-		"(error) slice w/ element type mismatch (one is nested array)": {
+		{label: "(error) slice w/ element type mismatch (one is nested array)",
 			input: struct{ Mixed []interface{} }{
 				[]interface{}{1, []interface{}{2}},
 			},
 			wantError: errArrayMixedElementTypes,
 		},
-		"(error) slice with 1 nil element": {
+		{label: "(error) slice with 1 nil element",
 			input:     struct{ NilElement1 []interface{} }{[]interface{}{nil}},
 			wantError: errArrayNilElement,
 		},
-		"(error) slice with 1 nil element (and other non-nil elements)": {
+		{label: "(error) slice with 1 nil element (and other non-nil elements)",
 			input: struct{ NilElement []interface{} }{
 				[]interface{}{1, nil},
 			},
 			wantError: errArrayNilElement,
 		},
-		"simple map": {
+		{label: "simple map",
 			input:      map[string]int{"a": 1, "b": 2},
 			wantOutput: "a = 1\nb = 2\n",
 		},
-		"map with interface{} value type": {
+		{label: "map with interface{} value type",
 			input:      map[string]interface{}{"a": 1, "b": "c"},
 			wantOutput: "a = 1\nb = \"c\"\n",
 		},
-		"map with interface{} value type, some of which are structs": {
+		{label: "map with interface{} value type, some of which are structs",
 			input: map[string]interface{}{
 				"a": struct{ Int int }{2},
 				"b": 1,
 			},
-			wantOutput: "b = 1\n\n[a]\n  Int = 2\n",
+			wantOutput: "b = 1\na {\n  Int = 2\n}\n",
 		},
-		"nested map": {
+		{label: "nested map",
 			input: map[string]map[string]int{
 				"a": {"b": 1},
 				"c": {"d": 2},
 			},
-			wantOutput: "[a]\n  b = 1\n\n[c]\n  d = 2\n",
+			wantOutput: "a {\n  b = 1\n}\nc {\n  d = 2\n}\n",
 		},
-		"nested struct": {
+		{label: "nested struct",
 			input: struct{ Struct struct{ Int int } }{
 				struct{ Int int }{1},
 			},
-			wantOutput: "[Struct]\n  Int = 1\n",
+			wantOutput: "Struct {\n  Int = 1\n}\n",
 		},
-		"nested struct and non-struct field": {
+		{label: "nested struct and non-struct field",
 			input: struct {
 				Struct struct{ Int int }
 				Bool   bool
 			}{struct{ Int int }{1}, true},
-			wantOutput: "Bool = true\n\n[Struct]\n  Int = 1\n",
+			wantOutput: "Bool = true\nStruct {\n  Int = 1\n}\n",
 		},
-		"2 nested structs": {
+		{label: "2 nested structs",
 			input: struct{ Struct1, Struct2 struct{ Int int } }{
 				struct{ Int int }{1}, struct{ Int int }{2},
 			},
-			wantOutput: "[Struct1]\n  Int = 1\n\n[Struct2]\n  Int = 2\n",
+			wantOutput: "Struct1 {\n  Int = 1\n}\nStruct2 {\n  Int = 2\n}\n",
 		},
-		"deeply nested structs": {
+		{label: "deeply nested structs",
 			input: struct {
 				Struct1, Struct2 struct{ Struct3 *struct{ Int int } }
 			}{
 				struct{ Struct3 *struct{ Int int } }{&struct{ Int int }{1}},
 				struct{ Struct3 *struct{ Int int } }{nil},
 			},
-			wantOutput: "[Struct1]\n  [Struct1.Struct3]\n    Int = 1" +
-				"\n\n[Struct2]\n",
+			wantOutput: "Struct1 {\n  Struct3 {\n    Int = 1\n  }\n}\nStruct2 {\n}\n",
 		},
-		"nested struct with nil struct elem": {
+		{label: "nested struct with nil struct elem",
 			input: struct {
 				Struct struct{ Inner *struct{ Int int } }
 			}{
 				struct{ Inner *struct{ Int int } }{nil},
 			},
-			wantOutput: "[Struct]\n",
+			wantOutput: "Struct {\n}\n",
 		},
-		"nested struct with no fields": {
+		{label: "nested struct with no fields",
 			input: struct {
 				Struct struct{ Inner struct{} }
 			}{
 				struct{ Inner struct{} }{struct{}{}},
 			},
-			wantOutput: "[Struct]\n  [Struct.Inner]\n",
+			wantOutput: "Struct {\n  Inner {\n  }\n}\n",
 		},
-		"struct with tags": {
+		{label: "struct with tags",
 			input: struct {
 				Struct struct {
 					Int int `json:"_int"`
@@ -311,37 +321,37 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 					Int int `json:"_int"`
 				}{1}, true,
 			},
-			wantOutput: "_bool = true\n\n[_struct]\n  _int = 1\n",
+			wantOutput: "_bool = true\n_struct {\n  _int = 1\n}\n",
 		},
-		"embedded struct": {
+		{label: "embedded struct",
 			input:      struct{ Embedded }{Embedded{1}},
 			wantOutput: "_int = 1\n",
 		},
-		"embedded *struct": {
+		{label: "embedded *struct",
 			input:      struct{ *Embedded }{&Embedded{1}},
 			wantOutput: "_int = 1\n",
 		},
-		"nested embedded struct": {
+		{label: "nested embedded struct",
 			input: struct {
 				Struct struct{ Embedded } `confl:"_struct"`
 			}{struct{ Embedded }{Embedded{1}}},
-			wantOutput: "[_struct]\n  _int = 1\n",
+			wantOutput: "_struct {\n  _int = 1\n}\n",
 		},
-		"nested embedded *struct": {
+		{label: "nested embedded *struct",
 			input: struct {
 				Struct struct{ *Embedded } `confl:"_struct"`
 			}{struct{ *Embedded }{&Embedded{1}}},
-			wantOutput: "[_struct]\n  _int = 1\n",
+			wantOutput: "_struct {\n  _int = 1\n}\n",
 		},
-		"array of tables": {
+		{label: "array of tables",
 			input: struct {
 				Structs []*struct{ Int int } `confl:"struct"`
 			}{
 				[]*struct{ Int int }{{1}, {3}},
 			},
-			wantOutput: "[[struct]]\n  Int = 1\n\n[[struct]]\n  Int = 3\n",
+			wantOutput: "struct = [\n  {\n    Int = 1\n  },\n  {\n    Int = 3\n  }\n]\n",
 		},
-		"array of tables order": {
+		{label: "array of tables order",
 			input: map[string]interface{}{
 				"map": map[string]interface{}{
 					"zero": 5,
@@ -352,13 +362,13 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 					},
 				},
 			},
-			wantOutput: "[map]\n  zero = 5\n\n  [[map.arr]]\n    friend = 5\n",
+			wantOutput: "map {\n  zero = 5\n  arr = [\n    {\n      friend = 5\n    }\n  ]\n}\n",
 		},
-		"(error) top-level slice": {
+		{label: "(error) top-level slice",
 			input:     []struct{ Int int }{{1}, {2}, {3}},
 			wantError: errNoKey,
 		},
-		"(error) slice of slice": {
+		{label: "(error) slice of slice",
 			input: struct {
 				Slices [][]struct{ Int int }
 			}{
@@ -366,27 +376,29 @@ ArrayOfMixedSlices = [[1, 2], ["a", "b"]]
 			},
 			wantError: errArrayNoTable,
 		},
-		"(error) map no string key": {
+		{label: "(error) map no string key",
 			input:     map[int]string{1: ""},
 			wantError: errNonString,
 		},
-		"(error) anonymous non-struct": {
+		{label: "(error) anonymous non-struct",
 			input:     struct{ NonStruct }{5},
 			wantError: errAnonNonStruct,
 		},
-		"(error) empty key name": {
+		{label: "(error) empty key name",
 			input:     map[string]int{"": 1},
 			wantError: errAnything,
 		},
-		"(error) empty map name": {
+		{label: "(error) empty map name",
 			input: map[string]interface{}{
 				"": map[string]int{"v": 1},
 			},
 			wantError: errAnything,
 		},
 	}
-	for label, test := range tests {
-		encodeExpected(t, label, test.input, test.wantOutput, test.wantError)
+	for idx, test := range tests {
+		u.Debugf("starting test:  #%d %v", idx, test.label)
+		encodeExpected(t, fmt.Sprintf("#%d: %s", idx, test.label), test.input,
+			test.wantOutput, test.wantError)
 	}
 }
 
@@ -409,23 +421,30 @@ func TestEncodeNestedTableArrays(t *testing.T) {
 				[]song{{"Glory Days"}, {"Dancing in the Dark"}}},
 		},
 	}
-	expected := `[[albums]]
-  name = "Born to Run"
-
-  [[albums.songs]]
-    name = "Jungleland"
-
-  [[albums.songs]]
-    name = "Meeting Across the River"
-
-[[albums]]
-  name = "Born in the USA"
-
-  [[albums.songs]]
-    name = "Glory Days"
-
-  [[albums.songs]]
-    name = "Dancing in the Dark"
+	expected := `albums = [
+  {
+    name = "Born to Run"
+    songs = [
+      {
+        name = "Jungleland"
+      },
+      {
+        name = "Meeting Across the River"
+      }
+    ]
+  },
+  {
+    name = "Born in the USA"
+    songs = [
+      {
+        name = "Glory Days"
+      },
+      {
+        name = "Dancing in the Dark"
+      }
+    ]
+  }
+]
 `
 	encodeExpected(t, "nested table arrays", value, expected, nil)
 }
@@ -448,7 +467,7 @@ func TestEncodeArrayHashWithNormalHashOrder(t *testing.T) {
 		A: Alpha{2},
 		B: []Beta{{3}},
 	}
-	expected := "V = 1\n\n[A]\n  V = 2\n\n[[B]]\n  V = 3\n"
+	expected := "V = 1\nA {\n  V = 2\n}\nB = [\n  {\n    V = 3\n  }\n]\n"
 	encodeExpected(t, "array hash with normal hash order", val, expected, nil)
 }
 
@@ -472,8 +491,16 @@ func encodeExpected(
 		return
 	}
 	if got := buf.String(); wantStr != got {
-		t.Errorf("%s: want\n-----\n%q\n-----\nbut got\n-----\n%q\n-----\n",
-			label, wantStr, got)
+		u.Debugf("\n\n%s wanted: \n%s\ngot: \n%s", label, wantStr, got)
+		for pos, r := range wantStr {
+			if len(got)-1 <= pos {
+				u.Warnf("len mismatch? %v vs %v", len(got), len(wantStr))
+			} else if r != rune(got[pos]) {
+				u.Warnf("mismatch at position: %v   %s!=%s", pos, string(r), string(got[pos]))
+				break
+			}
+		}
+		t.Fatalf("%s: want\n-----\n%q\n-----\nbut got\n-----\n%q\n-----\n", label, wantStr, got)
 	}
 }
 
@@ -489,6 +516,7 @@ func ExampleEncoder_Encode() {
 	}
 	buf := new(bytes.Buffer)
 	if err := NewEncoder(buf).Encode(config); err != nil {
+		u.Errorf("could not encode: %v", err)
 		log.Fatal(err)
 	}
 	fmt.Println(buf.String())
@@ -496,8 +524,8 @@ func ExampleEncoder_Encode() {
 	// Output:
 	// counts = [1, 1, 2, 3, 5, 8]
 	// date = 2010-03-14T18:00:00Z
-	//
-	// [hash]
+	// hash {
 	//   key1 = "val1"
 	//   key2 = "val2"
+	// }
 }

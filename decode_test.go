@@ -146,10 +146,10 @@ albums [
 	    songs [
 	      { name = "Jungleland" },
 	      { name = "Meeting Across the River" }
-	    ]
-    }
-    {
-    	name = "Born in the USA"
+		]
+	}
+	{
+		name = "Born in the USA"
   	    songs [
 	      { name = "Glory Days" },
 	      { name = "Dancing in the Dark" }
