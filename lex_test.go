@@ -28,7 +28,7 @@ func expect(t *testing.T, lx *lexer, items []item) {
 					u.Warnf("mismatch at position: %v   %q!=%q", pos, string(r), string(got[pos]))
 					break
 				} else {
-					u.Debugf("match at position: %v   %q=%q", pos, string(r), string(got[pos]))
+					//u.Debugf("match at position: %v   %q=%q", pos, string(r), string(got[pos]))
 				}
 			}
 			t.Fatalf("Testing: '%s'\nExpected %q, received %q\n",

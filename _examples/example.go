@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/araddon/gou"
+
 	"github.com/lytics/confl"
 )
 
@@ -45,6 +47,9 @@ type character struct {
 }
 
 func main() {
+	gou.SetupLogging("debug")
+	gou.SetColorOutput()
+
 	var config Config
 	if _, err := confl.DecodeFile("example.conf", &config); err != nil {
 		fmt.Println(err)
