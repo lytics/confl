@@ -153,7 +153,7 @@ And then decoded with:
 
 ```go
 var conf Config
-if _, err := confl.Decode(data, &conf); err != nil {
+if err := confl.Unmarshal(byteData, &conf); err != nil {
   // handle error
 }
 ```
@@ -200,7 +200,7 @@ type songs struct {
   Song []song
 }
 var favorites songs
-if _, err := Decode(blob, &favorites); err != nil {
+if err := confl.Unmarshal(blob, &favorites); err != nil {
   log.Fatal(err)
 }
 
