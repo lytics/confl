@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,6 +93,29 @@ my {
 	if !reflect.DeepEqual(simple, answer) {
 		t.Fatalf("Expected\n-----\n%#v\n-----\nbut got\n-----\n%#v\n",
 			answer, simple)
+	}
+
+	// Now Try decoding using Decoder
+	var simpleDec simpleType
+	decoder := NewDecoder(strings.NewReader(simpleConfigString))
+	err = decoder.Decode(&simpleDec)
+	assert.Tf(t, err == nil, "err nil?%v", err)
+
+	assert.Tf(t, simpleDec.AgePtr == nil, "must have nil ptr")
+	if !reflect.DeepEqual(simpleDec, answer) {
+		t.Fatalf("Expected\n-----\n%#v\n-----\nbut got\n-----\n%#v\n",
+			answer, simpleDec)
+	}
+
+	// Now Try decoding using Unmarshal
+	var simple2 simpleType
+	err = Unmarshal([]byte(simpleConfigString), &simple2)
+	assert.Tf(t, err == nil, "err nil?%v", err)
+
+	assert.Tf(t, simple2.AgePtr == nil, "must have nil ptr")
+	if !reflect.DeepEqual(simple2, answer) {
+		t.Fatalf("Expected\n-----\n%#v\n-----\nbut got\n-----\n%#v\n",
+			answer, simple2)
 	}
 }
 

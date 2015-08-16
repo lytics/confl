@@ -31,14 +31,6 @@ type Primitive struct {
 	context   Key
 }
 
-// DEPRECATED!
-//
-// Use MetaData.PrimitiveDecode instead.
-func PrimitiveDecode(primValue Primitive, v interface{}) error {
-	md := MetaData{decoded: make(map[string]bool)}
-	return md.unify(primValue.undecoded, rvalue(v))
-}
-
 // PrimitiveDecode is just like the other `Decode*` functions, except it
 // decodes a confl value that has already been parsed. Valid primitive values
 // can *only* be obtained from values filled by the decoder functions,
@@ -54,6 +46,28 @@ func (md *MetaData) PrimitiveDecode(primValue Primitive, v interface{}) error {
 	md.context = primValue.context
 	defer func() { md.context = nil }()
 	return md.unify(primValue.undecoded, rvalue(v))
+}
+
+type Decoder struct {
+	reader io.Reader
+}
+
+func NewDecoder(r io.Reader) *Decoder {
+	return &Decoder{r}
+}
+
+func (dec *Decoder) Decode(v interface{}) error {
+	bs, err := ioutil.ReadAll(dec.reader)
+	if err != nil {
+		return err
+	}
+	_, err = Decode(string(bs), v)
+	return err
+}
+
+func Unmarshal(bs []byte, v interface{}) error {
+	_, err := Decode(string(bs), v)
+	return err
 }
 
 // Decode will decode the contents of `data` in confl format into a pointer
