@@ -284,23 +284,24 @@ func maybeRemoveIndents(s string) string {
 		return s
 	}
 	lines := strings.Split(s, "\n")
+	indent := 0
+findIndent:
+	for idx, r := range lines[0] {
+		switch r {
+		case '\t', ' ':
+			// keep consuming
+		default:
+			// first non-whitespace we are going to break
+			// and use this as indent size.   This makes a variety of assumptions
+			// - subsequent indents use same mixture of spaces/tabs
+			indent = idx
+			break findIndent
+		}
+	}
+
 	for i, line := range lines {
 		//u.Debugf("%v indent=%d line %q", i, indent, line)
-	findIndent:
-		for idx, r := range line {
-			switch r {
-			case '\t', ' ':
-				// keep consuming
-			default:
-				// first non-whitespace we are going to break
-				// and use this as indent size
-				if idx > 0 {
-					//u.Debugf("chooping line: %q", line[0:idx-1])
-					lines[i] = line[idx:]
-				}
-				break findIndent
-			}
-		}
+		lines[i] = line[indent:]
 	}
 	return strings.Join(lines, "\n")
 }
