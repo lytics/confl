@@ -373,7 +373,8 @@ func lexValue(lx *lexer) stateFn {
 	case r == '-':
 		return lexNumberStart
 	case r == blockStart:
-		lx.ignore()
+		lx.next()   // ignore the /n after {
+		lx.ignore() // Ignore the (
 		return lexBlock
 	case isDigit(r):
 		lx.backup() // avoid an extra state and use the same as above
@@ -709,15 +710,17 @@ func lexDubString(lx *lexer) stateFn {
 // processing until it finds a ')' on a new line by itself.
 func lexBlock(lx *lexer) stateFn {
 	r := lx.next()
+
+	//u.Debugf("lexBlock() pos=%d len=%d  %q", lx.pos, len(lx.input), lx.input[lx.pos:])
 	switch {
 	case r == blockEnd:
-		lx.backup()
-		lx.backup()
+		lx.backup() // unconsume )  we are going to verify below
+		lx.backup() // unconsume previous rune to ensure it is newline
 
 		// Looking for a ')' character on a line by itself, if the previous
 		// character isn't a new line, then break so we keep processing the block.
 		if lx.next() != '\n' {
-			lx.next()
+			lx.next() // if inline ( this will consume it
 			break
 		}
 		lx.next()
@@ -726,10 +729,12 @@ func lexBlock(lx *lexer) stateFn {
 		// bare line by itself.
 		switch lx.next() {
 		case '\n', eof:
-			lx.backup()
-			lx.backup()
+			lx.backup() // unconsume the \n, or eof
+			lx.backup() // unconsume the )
+			lx.backup() // unconsume the \n
 			lx.emit(itemString)
-			lx.next()
+			lx.next() // consume the \n
+			lx.next() // consume the )
 			lx.ignore()
 			return lx.pop()
 		}

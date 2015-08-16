@@ -2,7 +2,11 @@ package confl
 
 import (
 	"testing"
+
+	u "github.com/araddon/gou"
 )
+
+var _ = u.EMPTY
 
 // Test to make sure we get what we expect.
 func expect(t *testing.T, lx *lexer, items []item) {
@@ -14,6 +18,19 @@ func expect(t *testing.T, lx *lexer, items []item) {
 			t.Fatal(item.val)
 		}
 		if item != items[i] {
+			//u.Debugf("\n\n%s wanted: \n%s\ngot: \n%s", label, wantStr, got)
+			wantStr := items[i].val
+			got := item.val
+			for pos, r := range wantStr {
+				if len(got)-1 < pos {
+					u.Warnf("len mismatch? %v vs %v", len(got), len(wantStr))
+				} else if r != rune(got[pos]) {
+					u.Warnf("mismatch at position: %v   %q!=%q", pos, string(r), string(got[pos]))
+					break
+				} else {
+					u.Debugf("match at position: %v   %q=%q", pos, string(r), string(got[pos]))
+				}
+			}
 			t.Fatalf("Testing: '%s'\nExpected %q, received %q\n",
 				lx.input, items[i], item)
 		}
@@ -240,21 +257,6 @@ var tomlHeaders = `
 [foo]
 port= 4242
 `
-
-// NOT CURRENTLY A FEATURE
-// func TestLexTomlHeaders(t *testing.T) {
-// 	expectedItems := []item{
-// 		{itemKey, "foo", 2},
-// 		{itemMapStart, "", 2},
-// 		{itemKey, "port", 3},
-// 		{itemInteger, "4242", 3},
-// 		{itemMapEnd, "", 4},
-// 		{itemEOF, "", 4},
-// 	}
-
-// 	lx := lex(tomlHeaders)
-// 	expect(t, lx, expectedItems)
-// }
 
 var nestedMap = `
 foo = {
@@ -557,7 +559,7 @@ numbers (
 func TestLexBlockString(t *testing.T) {
 	expectedItems := []item{
 		{itemKey, "numbers", 2},
-		{itemString, "\n1234567890\n", 4},
+		{itemString, "1234567890", 3},
 	}
 	lx := lex(blockexample)
 	expect(t, lx, expectedItems)
@@ -566,7 +568,7 @@ func TestLexBlockString(t *testing.T) {
 func TestLexBlockStringEOF(t *testing.T) {
 	expectedItems := []item{
 		{itemKey, "numbers", 2},
-		{itemString, "\n1234567890\n", 4},
+		{itemString, "1234567890", 3},
 	}
 	blockbytes := []byte(blockexample[0 : len(blockexample)-1])
 	blockbytes = append(blockbytes, 0)
@@ -583,10 +585,15 @@ numbers (
 )
 `
 
+var mlBlockTextVal = `  12(34)56
+  (
+    7890
+  )`
+
 func TestLexBlockStringMultiLine(t *testing.T) {
 	expectedItems := []item{
 		{itemKey, "numbers", 2},
-		{itemString, "\n  12(34)56\n  (\n    7890\n  )\n", 7},
+		{itemString, mlBlockTextVal, 6},
 	}
 	lx := lex(mlblockexample)
 	expect(t, lx, expectedItems)

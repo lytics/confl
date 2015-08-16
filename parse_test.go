@@ -54,22 +54,6 @@ func TestParseSample1(t *testing.T) {
 	test(t, sample1, ex)
 }
 
-var tomlHeaderSample = `
-[foo]
-ip   = '127.0.0.1'
-
-`
-
-// NOT CURRENTLY A FEATURE
-// func TestParseTomlHeader(t *testing.T) {
-// 	ex := map[string]interface{}{
-// 		"foo": map[string]interface{}{
-// 			"ip": "127.0.0.1",
-// 		},
-// 	}
-// 	test(t, tomlHeaderSample, ex)
-// }
-
 var cluster = `
 cluster {
   port: 4244
@@ -117,14 +101,19 @@ foo  {
   expr = '(true == "false")'
   text = 'This is a multi-line
 text block.'
+  text2 (
+    hello world
+    this is multi line
+)
 }
 `
 
 func TestParseSample3(t *testing.T) {
 	ex := map[string]interface{}{
 		"foo": map[string]interface{}{
-			"expr": "(true == \"false\")",
-			"text": "This is a multi-line\ntext block.",
+			"expr":  "(true == \"false\")",
+			"text":  "This is a multi-line\ntext block.",
+			"text2": "hello world\nthis is multi line",
 		},
 	}
 	test(t, sample3, ex)

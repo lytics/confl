@@ -21,7 +21,11 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	u "github.com/araddon/gou"
 )
+
+var _ = u.EMPTY
 
 // Parser will return a map of keys to interface{}, although concrete types
 // underly them. The values supported are string, bool, int64, float64, DateTime.
@@ -162,7 +166,8 @@ func (p *parser) processItem(it item) error {
 	case itemMapEnd:
 		p.setValue(p.popContext())
 	case itemString:
-		p.setValue(it.val) // FIXME(dlc) sanitize string?
+		// FIXME(dlc) sanitize string?
+		p.setValue(maybeRemoveIndents(it.val))
 	case itemInteger:
 		num, err := strconv.ParseInt(it.val, 10, 64)
 		if err != nil {
@@ -271,6 +276,33 @@ func (p *parser) current() string {
 		return p.currentKey
 	}
 	return fmt.Sprintf("%s.%s", p.context, p.currentKey)
+}
+
+// for multi-line text comments lets remove the Indent
+func maybeRemoveIndents(s string) string {
+	if !strings.Contains(s, "\n") {
+		return s
+	}
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		//u.Debugf("%v indent=%d line %q", i, indent, line)
+	findIndent:
+		for idx, r := range line {
+			switch r {
+			case '\t', ' ':
+				// keep consuming
+			default:
+				// first non-whitespace we are going to break
+				// and use this as indent size
+				if idx > 0 {
+					//u.Debugf("chooping line: %q", line[0:idx-1])
+					lines[i] = line[idx:]
+				}
+				break findIndent
+			}
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 func replaceEscapes(s string) string {
