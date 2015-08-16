@@ -4,9 +4,11 @@ This is a config parser most similar to Nginx, supports
 Json format, but with line-breaks, comments, etc.   Also, like
 Nginx is more lenient.
 
-[![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](https://godoc.org/github.com/lytics/confl).    
+Uses same syntax as https://github.com/vstakhov/libucl
 
-Use [SubmlimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx)
+[![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](https://godoc.org/github.com/lytics/confl).
+
+Use [SubmlimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx) for formatting.
 
 Credit to [BurntSushi/Toml](https://github.com/BurntSushi/toml) and [Apcera/Gnatsd](https://github.com/apcera/gnatsd/tree/master/conf) from which 
 this was derived.
@@ -18,9 +20,12 @@ this was derived.
 
 # support the name = value format
 title = "conf Example"
-
+# support json semicolon
+title2 : "conf example2"
+# support omitting = or : because key starts a line
+title3 "conf example"
 # note, we do not have to have quotes
-title2 = Without Quotes
+title4 = Without Quotes
 
 # for Sections we can use brackets
 hand {
@@ -39,16 +44,16 @@ address : {
   "country" : "Westeros"
 }
 
-# sections can omit the colon before bracket or leave in 
+# sections can omit the colon, equal before bracket 
 seenwith {
   # nested section
   # can be spaces or tabs for nesting
-  jaime {
+  jaime : {
     season = season1
     episode = "episode1"
   }
 
-  cersei {
+  cersei = {
     season = season1
     episode = "episode1"
   }
@@ -66,7 +71,7 @@ seasons = [
 ]
 
 
-# long fields can use parens to do multi-line
+# long strings can use parens to allow multi-line
 description (
     we possibly
     can have
