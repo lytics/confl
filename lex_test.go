@@ -37,6 +37,14 @@ func expect(t *testing.T, lx *lexer, items []item) {
 	}
 }
 
+func TestLexBadConfString(t *testing.T) {
+	lx := lex("\x0e9\xbd\xbf\xefr")
+	item := lx.nextItem()
+	if item.typ != itemError {
+		t.Fatal(item.val)
+	}
+}
+
 func TestLexSimpleKeyStringValues(t *testing.T) {
 	expectedItems := []item{
 		{itemKey, "foo", 1},

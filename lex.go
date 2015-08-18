@@ -17,12 +17,22 @@ package confl
 
 import (
 	"fmt"
-	u "github.com/araddon/gou"
 	"strings"
+	"unicode"
 	"unicode/utf8"
+
+	u "github.com/araddon/gou"
 )
 
-var _ = u.EMPTY
+var (
+	// Which Identity Characters are allowed?
+	IdentityChars = "_."
+	// A lax identity char set rule, we use as default
+	// if you want the one above, swap them out
+	//IdentityChars = "_./- "
+
+	_ = u.EMPTY
+)
 
 type itemType int
 
@@ -216,11 +226,11 @@ func lexTop(lx *lexer) stateFn {
 		return lexSkip(lx, lexTop)
 	}
 
-	switch r {
-	case commentHashStart:
+	switch {
+	case r == commentHashStart:
 		lx.push(lexTop)
 		return lexCommentStart
-	case commentSlashStart:
+	case r == commentSlashStart:
 		rn := lx.next()
 		if rn == commentSlashStart {
 			lx.push(lexTop)
@@ -228,7 +238,7 @@ func lexTop(lx *lexer) stateFn {
 		}
 		lx.backup()
 		fallthrough
-	case eof:
+	case r == eof:
 		if lx.pos > lx.start {
 			return lx.errorf("Unexpected EOF.")
 		}
@@ -290,6 +300,13 @@ func lexKeyStart(lx *lexer) stateFn {
 	case r == sqStringStart:
 		lx.next()
 		return lexSkip(lx, lexQuotedKey)
+	case !isIdentifierRune(r):
+		// This is not a valid identity/key rune
+		lx.next()
+		lx.ignore()
+		return lexKeyStart
+	case r == eof:
+		return lexTop
 	}
 	lx.ignore()
 	lx.next()
@@ -324,7 +341,11 @@ func lexQuotedKey(lx *lexer) stateFn {
 // is not whitespace) has already been consumed.
 func lexKey(lx *lexer) stateFn {
 	r := lx.peek()
-	if isWhitespace(r) || isNL(r) || isKeySeparator(r) {
+	switch {
+	case r == eof:
+		// Unexpected end, allow lexTop eof/error to handle it
+		return lexTop
+	case isWhitespace(r) || isNL(r) || isKeySeparator(r):
 		lx.emit(itemKey)
 		return lexKeyEnd
 	}
@@ -947,6 +968,18 @@ func isEndNormal(lx *lexer, r rune) bool {
 
 func isEndArrayUnQuoted(lx *lexer, r rune) bool {
 	return (isNL(r) || r == eof || r == optValTerm || r == arrayEnd || r == arrayValTerm || isWhitespace(r))
+}
+
+func isIdentifierRune(r rune) bool {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		return true
+	}
+	for _, allowedRune := range IdentityChars {
+		if allowedRune == r {
+			return true
+		}
+	}
+	return false
 }
 
 // Tests for both key separators
