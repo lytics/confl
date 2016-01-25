@@ -1,6 +1,7 @@
 package confl
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -151,4 +152,28 @@ func TestParseSample5(t *testing.T) {
 		},
 	}
 	test(t, sample5, ex)
+}
+
+func TestBigSlices(t *testing.T) {
+	txt := "Hosts   : ["
+	for i := 0; i < 100; i++ {
+		txt += fmt.Sprintf(`"http://192.168.1.%d:9999", `, i)
+	}
+	txt += `"http://123.123.123.123:9999"]` + "\n"
+
+	x := struct{ Hosts []string }{}
+	if err := Unmarshal([]byte(txt), &x); err != nil {
+		t.Fatalf("error unmarshaling sample: %v", err)
+	}
+	if len(x.Hosts) != 101 {
+		t.Fatalf("%d != 101", len(x.Hosts))
+	}
+	for i, v := range x.Hosts {
+		if i < 100 && v != fmt.Sprintf("http://192.168.1.%d:9999", i) {
+			t.Errorf("%d unexpected: %s", i, v)
+		}
+	}
+	if x.Hosts[100] != "http://123.123.123.123:9999" {
+		t.Errorf("unexpected: %s", x.Hosts[100])
+	}
 }
