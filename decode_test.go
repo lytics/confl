@@ -44,11 +44,28 @@ my {
   }
 }
 
+games [
+    {
+    	// more comments behind tab
+        name "game of thrones"  # we have a comment
+        sku  "got"   // another comment, empty line next
+
+    }
+    {
+        name "settlers of catan"
+        // a comment
+    }
+]
+
 `
 
 	type cats struct {
 		Plato  string
 		Cauchy string
+	}
+	type game struct {
+		Name string
+		Sku  string
 	}
 	type simpleType struct {
 		Age     int
@@ -61,6 +78,7 @@ my {
 		Andrew  string
 		Kait    string
 		My      map[string]cats
+		Games   []*game
 	}
 
 	var simple simpleType
@@ -87,6 +105,10 @@ my {
 		},
 		My: map[string]cats{
 			"Cats": cats{Plato: "cat 1", Cauchy: "cat 2"},
+		},
+		Games: []*game{
+			&game{"game of thrones", "got"},
+			&game{Name: "settlers of catan"},
 		},
 	}
 	assert.Tf(t, simple.AgePtr == nil, "must have nil ptr")
