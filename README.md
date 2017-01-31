@@ -8,7 +8,7 @@ Uses same syntax as https://github.com/vstakhov/libucl
 
 [![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](https://godoc.org/github.com/lytics/confl).
 
-Use [SubmlimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx) for formatting.
+Use [SublimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx) for formatting.
 
 Credit to [BurntSushi/Toml](https://github.com/BurntSushi/toml) and [Apcera/Gnatsd](https://github.com/apcera/gnatsd/tree/master/conf) from which 
 this was derived.
