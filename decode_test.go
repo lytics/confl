@@ -60,8 +60,8 @@ games [
 `
 
 	type cats struct {
-		Plato  string
-		Cauchy string
+		PlatoAlias       string `json:"plato,omitempty"`
+		CauchyConflAlias string `confl:"cauchy"`
 	}
 	type game struct {
 		Name string
@@ -104,7 +104,7 @@ games [
 			{"pink", "brown"},
 		},
 		My: map[string]cats{
-			"Cats": cats{Plato: "cat 1", Cauchy: "cat 2"},
+			"Cats": cats{PlatoAlias: "cat 1", CauchyConflAlias: "cat 2"},
 		},
 		Games: []*game{
 			&game{"game of thrones", "got"},

@@ -6,7 +6,12 @@ Nginx is more lenient.
 
 Uses same syntax as https://github.com/vstakhov/libucl
 
-[![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](https://godoc.org/github.com/lytics/confl).
+[![Code Coverage](https://codecov.io/gh/lytics/confl/branch/master/graph/badge.svg)](https://codecov.io/gh/lytics/confl)
+[![GoDoc](https://godoc.org/github.com/lytics/confl?status.svg)](http://godoc.org/github.com/lytics/confl)
+[![Build Status](https://travis-ci.org/lytics/confl.svg?branch=master)](https://travis-ci.org/lytics/confl)
+[![Go ReportCard](https://goreportcard.com/badge/lytics/confl)](https://goreportcard.com/report/lytics/confl)
+
+
 
 Use [SublimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx) for formatting.
 
