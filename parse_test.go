@@ -103,8 +103,10 @@ foo  {
   text = 'This is a multi-line
 text block.'
   text2 (
-    hello world
-      this is multi line
+			hello world
+			  this is multi line
+
+			with empty line
 )
 }
 `
@@ -114,7 +116,7 @@ func TestParseSample3(t *testing.T) {
 		"foo": map[string]interface{}{
 			"expr":  "(true == \"false\")",
 			"text":  "This is a multi-line\ntext block.",
-			"text2": "hello world\n  this is multi line",
+			"text2": "hello world\n  this is multi line\n\nwith empty line",
 		},
 	}
 	test(t, sample3, ex)
