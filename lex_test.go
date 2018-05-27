@@ -37,6 +37,48 @@ func expect(t *testing.T, lx *lexer, items []item) {
 	}
 }
 
+// Test to make sure we get what we expect.
+func expectError(t *testing.T, conf string) {
+	lx := lex(conf)
+	for {
+		item := lx.nextItem()
+		if item.typ == itemEOF {
+			t.Fatalf("expected error got EOF for %v", conf)
+			break
+		} else if item.typ == itemError {
+			// Success
+			return
+		}
+	}
+}
+
+var errorVals = []string{
+	`//comment1
+config : {
+	/ -- bad comment1
+}`,
+	`//comment2
+config : {
+	port: 8080
+}/ -- bad comment2`,
+	`/comment3
+port: 8080`,
+	`port: 8083 /badcomment4`,
+	`port: 8084 //goodcomment1
+	portx: 80/badcomment4`,
+	`:port: 8085`, // Can't start key with key seperator
+	`=port=8086`,  // Can't start key with key seperator
+	`rate=.55`,    // can't start values with .
+	`rate=
+`, // can't start values with new line.
+}
+
+func TestLexErrors(t *testing.T) {
+	for _, v := range errorVals {
+		expectError(t, v)
+	}
+}
+
 func TestLexBadConfString(t *testing.T) {
 	lx := lex("\x0e9\xbd\xbf\xefr")
 	item := lx.nextItem()
@@ -241,7 +283,11 @@ func TestLexSimpleMap(t *testing.T) {
 var mlMap = `
 foo = {
   ip = '127.0.0.1'
+  # comment1
+	#comment2
   port= 4242
+  // comment3
+  rate = 55
 }
 `
 
@@ -251,26 +297,31 @@ func TestLexMultilineMap(t *testing.T) {
 		{itemMapStart, "", 2},
 		{itemKey, "ip", 3},
 		{itemString, "127.0.0.1", 3},
-		{itemKey, "port", 4},
-		{itemInteger, "4242", 4},
-		{itemMapEnd, "", 5},
-		{itemEOF, "", 5},
+		{itemCommentStart, "", 4},
+		{itemText, " comment1", 4},
+		{itemCommentStart, "", 5},
+		{itemText, "comment2", 5},
+		{itemKey, "port", 6},
+		{itemInteger, "4242", 6},
+		{itemCommentStart, "", 7},
+		{itemText, " comment3", 7},
+		{itemKey, "rate", 8},
+		{itemInteger, "55", 8},
+		{itemMapEnd, "", 9},
+		{itemEOF, "", 9},
 	}
 
 	lx := lex(mlMap)
 	expect(t, lx, expectedItems)
 }
 
-var tomlHeaders = `
-[foo]
-port= 4242
-`
-
 var nestedMap = `
 foo = {
   host = {
-    ip = '127.0.0.1'
-    port= 4242
+	ip = '127.0.0.1'
+	port= 4242
+	// rate comment
+	rate = 55
   }
 }
 `
@@ -285,8 +336,12 @@ func TestLexNestedMaps(t *testing.T) {
 		{itemString, "127.0.0.1", 4},
 		{itemKey, "port", 5},
 		{itemInteger, "4242", 5},
-		{itemMapEnd, "", 6},
-		{itemMapEnd, "", 7},
+		{itemCommentStart, "", 6},
+		{itemText, " rate comment", 6},
+		{itemKey, "rate", 7},
+		{itemInteger, "55", 7},
+		{itemMapEnd, "", 8},
+		{itemMapEnd, "", 9},
 		{itemEOF, "", 5},
 	}
 

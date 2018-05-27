@@ -186,15 +186,6 @@ func (lx *lexer) backup() {
 	}
 }
 
-// accept consumes the next rune if it's equal to `valid`.
-func (lx *lexer) accept(valid rune) bool {
-	if lx.next() == valid {
-		return true
-	}
-	lx.backup()
-	return false
-}
-
 // peek returns but does not consume the next rune in the input.
 func (lx *lexer) peek() rune {
 	r := lx.next()
@@ -225,7 +216,6 @@ func lexTop(lx *lexer) stateFn {
 	if r != eof && (isWhitespace(r) || isNL(r)) {
 		return lexSkip(lx, lexTop)
 	}
-
 	switch {
 	case r == commentHashStart:
 		lx.push(lexTop)
@@ -276,9 +266,6 @@ func lexTopValueEnd(lx *lexer) stateFn {
 	case isNL(r) || r == eof || r == optValTerm:
 		lx.ignore()
 		return lexTop
-		// case r == ')':
-		// 	lx.ignore()
-		// 	return lexTop
 	}
 	return lx.errorf("Expected a top-level value to end with a new line, "+
 		"comment or EOF, but got '%v' instead.", r)
@@ -292,6 +279,7 @@ func lexKeyStart(lx *lexer) stateFn {
 	case isKeySeparator(r):
 		return lx.errorf("Unexpected key separator '%v'.", r)
 	case isWhitespace(r) || isNL(r):
+		// Most likely this is not-reachable, as the lexTop already checks for it.
 		lx.next()
 		return lexSkip(lx, lexKeyStart)
 	case r == dqStringStart:

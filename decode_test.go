@@ -489,7 +489,7 @@ func ExampleDecode() {
 # Some comments.
 alpha {
 	ip = "10.0.0.1"
-
+	// config section
 	config {
 		Ports = [ 8001, 8002 ]
 		Location = "Toronto"
