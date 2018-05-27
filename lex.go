@@ -20,18 +20,11 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
-	u "github.com/araddon/gou"
 )
 
 var (
-	// Which Identity Characters are allowed?
+	// IdentityChars Which Identity Characters are allowed?
 	IdentityChars = "_."
-	// A lax identity char set rule, we use as default
-	// if you want the one above, swap them out
-	//IdentityChars = "_./- "
-
-	_ = u.EMPTY
 )
 
 type itemType int
@@ -995,44 +988,8 @@ func isHexadecimal(r rune) bool {
 		(r >= 'A' && r <= 'F')
 }
 
-func (itype itemType) String() string {
-	switch itype {
-	case itemError:
-		return "Error"
-	case itemNIL:
-		return "NIL"
-	case itemEOF:
-		return "EOF"
-	case itemText:
-		return "Text"
-	case itemString:
-		return "String"
-	case itemBool:
-		return "Bool"
-	case itemInteger:
-		return "Integer"
-	case itemFloat:
-		return "Float"
-	case itemDatetime:
-		return "DateTime"
-	case itemKey:
-		return "Key"
-	case itemArrayStart:
-		return "ArrayStart"
-	case itemArrayEnd:
-		return "ArrayEnd"
-	case itemMapStart:
-		return "MapStart"
-	case itemMapEnd:
-		return "MapEnd"
-	case itemCommentStart:
-		return "CommentStart"
-	}
-	panic(fmt.Sprintf("BUG: Unknown type '%s'.", itype.String()))
-}
-
 func (item item) String() string {
-	return fmt.Sprintf("(%s, '%s', %d)", item.typ.String(), item.val, item.line)
+	return fmt.Sprintf("(%T, '%s', %d)", item.typ, item.val, item.line)
 }
 
 func escapeSpecial(c rune) string {

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	u "github.com/araddon/gou"
-	"github.com/bmizerany/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -83,7 +83,7 @@ games [
 
 	var simple simpleType
 	_, err := Decode(simpleConfigString, &simple)
-	assert.Tf(t, err == nil, "err nil?%v", err)
+	assert.True(t, err == nil, "err nil?%v", err)
 
 	now, err := time.Parse("2006-01-02T15:04:05", "1987-07-05T05:45:00")
 	if err != nil {
@@ -111,7 +111,7 @@ games [
 			&game{Name: "settlers of catan"},
 		},
 	}
-	assert.Tf(t, simple.AgePtr == nil, "must have nil ptr")
+	assert.True(t, simple.AgePtr == nil, "must have nil ptr")
 	if !reflect.DeepEqual(simple, answer) {
 		t.Fatalf("Expected\n-----\n%#v\n-----\nbut got\n-----\n%#v\n",
 			answer, simple)
@@ -121,9 +121,9 @@ games [
 	var simpleDec simpleType
 	decoder := NewDecoder(strings.NewReader(simpleConfigString))
 	err = decoder.Decode(&simpleDec)
-	assert.Tf(t, err == nil, "err nil?%v", err)
+	assert.True(t, err == nil, "err nil?%v", err)
 
-	assert.Tf(t, simpleDec.AgePtr == nil, "must have nil ptr")
+	assert.True(t, simpleDec.AgePtr == nil, "must have nil ptr")
 	if !reflect.DeepEqual(simpleDec, answer) {
 		t.Fatalf("Expected\n-----\n%#v\n-----\nbut got\n-----\n%#v\n",
 			answer, simpleDec)
@@ -132,9 +132,9 @@ games [
 	// Now Try decoding using Unmarshal
 	var simple2 simpleType
 	err = Unmarshal([]byte(simpleConfigString), &simple2)
-	assert.Tf(t, err == nil, "err nil?%v", err)
+	assert.True(t, err == nil, "err nil?%v", err)
 
-	assert.Tf(t, simple2.AgePtr == nil, "must have nil ptr")
+	assert.True(t, simple2.AgePtr == nil, "must have nil ptr")
 	if !reflect.DeepEqual(simple2, answer) {
 		t.Fatalf("Expected\n-----\n%#v\n-----\nbut got\n-----\n%#v\n",
 			answer, simple2)
