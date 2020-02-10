@@ -18,6 +18,12 @@ Use [SublimeText Nginx Plugin](https://github.com/brandonwamboldt/sublime-nginx)
 Credit to [BurntSushi/Toml](https://github.com/BurntSushi/toml) and [Apcera/Gnatsd](https://github.com/apcera/gnatsd/tree/master/conf) from which 
 this was derived.
 
+### Other Options
+There are a variety of options for config with comments in Go, this project started before some of them which you might consider as options as well:
+* https://github.com/hjson/hjson-go
+* https://github.com/lalamove/konfig 
+* https://github.com/hashicorp/hcl
+
 ### Example
 
 ```
